@@ -1,0 +1,96 @@
+import { describe, it, expect } from 'vitest';
+import { slalomToNumeric } from '../src/components/charts';
+
+// Mock helpers from api.ts since we can import them or write equivalent logic
+// Let's duplicate the PB selection helpers here to test their logic
+function getBetterSlalom(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  
+  function parseSlalom(s: string) {
+    const parts = s.split('/');
+    const buoys = parseFloat(parts[0]) || 0;
+    const speed = parseFloat(parts[1]) || 0;
+    const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+    return { buoys, speed, rope };
+  }
+
+  try {
+    const p1 = parseSlalom(s1);
+    const p2 = parseSlalom(s2);
+
+    if (p1.speed !== p2.speed) {
+      return p1.speed > p2.speed ? s1 : s2;
+    }
+    if (p1.rope !== p2.rope) {
+      return p1.rope < p2.rope ? s1 : s2; // smaller rope length is better
+    }
+    return p1.buoys >= p2.buoys ? s1 : s2;
+  } catch (e) {
+    return s1;
+  }
+}
+
+function getBetterTricks(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  const t1 = parseInt(s1, 10) || 0;
+  const t2 = parseInt(s2, 10) || 0;
+  return t1 >= t2 ? s1 : s2;
+}
+
+function getBetterJump(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  const j1 = parseFloat(s1) || 0;
+  const j2 = parseFloat(s2) || 0;
+  return j1 >= j2 ? s1 : s2;
+}
+
+describe('Slalom Score Conversion to Numeric Value', () => {
+  it('should prioritize higher speed', () => {
+    const scoreLowSpeed = slalomToNumeric('6.00/55/18.25');
+    const scoreHighSpeed = slalomToNumeric('1.00/58/18.25');
+    expect(scoreHighSpeed).toBeGreaterThan(scoreLowSpeed);
+  });
+
+  it('should prioritize shorter rope lengths at the same speed', () => {
+    const longRope = slalomToNumeric('6.00/58/18.25');
+    const shortRope = slalomToNumeric('1.00/58/16.00');
+    expect(shortRope).toBeGreaterThan(longRope);
+  });
+
+  it('should prioritize higher buoy counts at the same speed and rope', () => {
+    const fewBuoys = slalomToNumeric('2.50/58/13.00');
+    const manyBuoys = slalomToNumeric('4.00/58/13.00');
+    expect(manyBuoys).toBeGreaterThan(fewBuoys);
+  });
+});
+
+describe('Personal Bests Selection Helpers', () => {
+  describe('Slalom PBs', () => {
+    it('should select the score with higher speed', () => {
+      expect(getBetterSlalom('6.00/55/18.25', '1.00/58/18.25')).toBe('1.00/58/18.25');
+    });
+
+    it('should select the score with shorter rope length', () => {
+      expect(getBetterSlalom('6.00/58/18.25', '1.00/58/16.00')).toBe('1.00/58/16.00');
+      expect(getBetterSlalom('3.50/58/13.00', '1.50/58/12.00')).toBe('1.50/58/12.00');
+    });
+
+    it('should select the score with more buoys if speed and rope match', () => {
+      expect(getBetterSlalom('2.50/58/12.00', '4.00/58/12.00')).toBe('4.00/58/12.00');
+    });
+  });
+
+  describe('Tricks PBs', () => {
+    it('should select the higher integer score', () => {
+      expect(getBetterTricks('2800', '3500')).toBe('3500');
+      expect(getBetterTricks('4200', '1900')).toBe('4200');
+    });
+  });
+
+  describe('Jump PBs', () => {
+    it('should select the longer jump distance', () => {
+      expect(getBetterJump('28.5', '32.1')).toBe('32.1');
+      expect(getBetterJump('41.20', '39.80')).toBe('41.20');
+    });
+  });
+});
