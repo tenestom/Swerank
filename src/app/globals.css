@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --font-outfit: 'Outfit', sans-serif;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #e2e8f0;
+  --primary: #005b99;
+  --primary-hover: #004070;
+  --secondary: #ffcd00;
+  --muted: #64748b;
+  --muted-background: #f1f5f9;
+  --accent: #0284c7;
+}
+
+/* Class-based dark mode override or prefers-color-scheme */
+.dark, [data-theme='dark'] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --border: #334155;
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --secondary: #eab308;
+  --muted: #94a3b8;
+  --muted-background: #1e293b;
+  --accent: #0ea5e9;
+}
+
+@theme {
+  --font-sans: var(--font-outfit);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-background);
+  --color-accent: var(--accent);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-outfit);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-y: scroll;
+}
+
+/* Custom Scrollbar for modern feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Custom glassmorphism classes */
+.glass {
+  background: rgba(var(--card), 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Table styles */
+.sticky-header th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--muted-background);
+}
