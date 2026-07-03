@@ -379,14 +379,7 @@ function RankingsContent() {
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
                     Klass
                   </th>
-                  <th 
-                    onClick={() => handleSort('club')}
-                    className="p-4 text-xs font-bold uppercase tracking-wider text-muted cursor-pointer hover:bg-border/50 select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      Klubb {getSortIcon('club')}
-                    </div>
-                  </th>
+
                   <th 
                     onClick={() => handleSort('yob')}
                     className="p-4 text-xs font-bold uppercase tracking-wider text-muted cursor-pointer hover:bg-border/50 select-none"
@@ -435,9 +428,7 @@ function RankingsContent() {
                       <td className="p-4 text-sm font-medium">
                         {entry.category}
                       </td>
-                      <td className="p-4 text-sm text-muted">
-                        {entry.club || 'Okänd klubb'}
-                      </td>
+
                       <td className="p-4 text-sm text-muted">
                         {entry.yob}
                       </td>
