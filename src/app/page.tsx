@@ -80,8 +80,8 @@ export default async function Home() {
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
           Svensk Vattenskidranking
         </h1>
-        <p className="text-lg text-muted">
-          Välkommen till den officiella rankingen för svensk vattenskidsport. Följ live-uppdaterad ställning för Slalom, Trick och Hopp.
+        <p className="text-lg text-muted font-medium">
+          Inofficiell svensk ranking
         </p>
         
         {/* Rolling Banner */}
