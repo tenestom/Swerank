@@ -3,28 +3,73 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AthleteProfile } from '@/lib/types';
+import { AthleteProfile, AthletePerformance } from '@/lib/types';
 import PerformanceChart, { slalomToNumeric } from '@/components/charts';
 import { 
   User, 
-  MapPin, 
-  Tag, 
   Building, 
-  Award,
+  Tag, 
   ArrowLeft,
-  Calendar,
   History,
-  TrendingUp,
   RefreshCw,
-  TrendingDown
+  Award,
+  Filter,
+  CheckCircle,
+  HelpCircle
 } from 'lucide-react';
+
+// Client-side score comparison helpers
+function getBetterSlalom(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  
+  function parseSlalom(s: string) {
+    const parts = s.split('/');
+    const buoys = parseFloat(parts[0]) || 0;
+    const speed = parseFloat(parts[1]) || 0;
+    const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+    return { buoys, speed, rope };
+  }
+
+  try {
+    const p1 = parseSlalom(s1);
+    const p2 = parseSlalom(s2);
+
+    if (p1.speed !== p2.speed) {
+      return p1.speed > p2.speed ? s1 : s2;
+    }
+    if (p1.rope !== p2.rope) {
+      return p1.rope < p2.rope ? s1 : s2; // Shorter rope length is better
+    }
+    return p1.buoys >= p2.buoys ? s1 : s2;
+  } catch (e) {
+    return s1;
+  }
+}
+
+function getBetterTricks(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  const t1 = parseInt(s1, 10) || 0;
+  const t2 = parseInt(s2, 10) || 0;
+  return t1 >= t2 ? s1 : s2;
+}
+
+function getBetterJump(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  const j1 = parseFloat(s1) || 0;
+  const j2 = parseFloat(s2) || 0;
+  return j1 >= j2 ? s1 : s2;
+}
 
 export default function AthleteDetail() {
   const router = useRouter();
   const { id } = useParams();
+  
   const [profile, setProfile] = useState<AthleteProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Toggle state: default is ONLY homologated
+  const [onlyHomologated, setOnlyHomologated] = useState<boolean>(true);
 
   const fetchProfile = async (forceRefresh = false) => {
     if (!id) return;
@@ -73,11 +118,36 @@ export default function AthleteDetail() {
     );
   }
 
+  // Filter performances based on the toggle
+  const displayPerformances = onlyHomologated
+    ? profile.performances.filter(p => p.homologated)
+    : profile.performances;
+
+  // Dynamically calculate Personal Bests (PB) on the client side
+  let pbSlalom: string | null = null;
+  let pbTricks: string | null = null;
+  let pbJump: string | null = null;
+
+  for (const perf of displayPerformances) {
+    const isSlalom = perf.category.toLowerCase().includes('slalom');
+    const isTricks = perf.category.toLowerCase().includes('tricks');
+    const isJump = perf.category.toLowerCase().includes('jump') || perf.category.toLowerCase().includes('hopp');
+
+    for (const score of perf.rounds) {
+      if (isSlalom) {
+        pbSlalom = getBetterSlalom(pbSlalom, score);
+      } else if (isTricks) {
+        pbTricks = getBetterTricks(pbTricks, score);
+      } else if (isJump) {
+        pbJump = getBetterJump(pbJump, score);
+      }
+    }
+  }
+
   // Prepare chart data for Slalom
-  const slalomData = profile.performances
+  const slalomData = displayPerformances
     .filter(p => p.category.toLowerCase().includes('slalom'))
     .map(p => {
-      // Find the best round score in this performance
       let bestRoundScore = '0';
       let bestNumeric = 0;
       for (const roundScore of p.rounds) {
@@ -88,7 +158,7 @@ export default function AthleteDetail() {
         }
       }
       return {
-        date: p.dateStr.split(' ').slice(-2).join(' '), // Short date e.g. "Aug 2006" or "2026"
+        date: p.dateStr.split(' ').slice(-2).join(' '),
         compName: p.compName,
         rawValue: bestRoundScore,
         value: bestNumeric
@@ -96,7 +166,7 @@ export default function AthleteDetail() {
     });
 
   // Prepare chart data for Tricks
-  const tricksData = profile.performances
+  const tricksData = displayPerformances
     .filter(p => p.category.toLowerCase().includes('trick'))
     .map(p => {
       let bestRoundScore = '0';
@@ -117,7 +187,7 @@ export default function AthleteDetail() {
     });
 
   // Prepare chart data for Jump
-  const jumpData = profile.performances
+  const jumpData = displayPerformances
     .filter(p => p.category.toLowerCase().includes('jump') || p.category.toLowerCase().includes('hopp'))
     .map(p => {
       let bestRoundScore = '0';
@@ -187,6 +257,31 @@ export default function AthleteDetail() {
         </div>
       </div>
 
+      {/* Homologation Toggle Card */}
+      <div className="bg-card border border-border p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h3 className="font-bold text-sm flex items-center gap-1.5">
+            <Filter className="h-4 w-4 text-primary" />
+            Resultatfilter
+          </h3>
+          <p className="text-xs text-muted">
+            Välj om du vill visa inofficiella (klubb/nationella) resultat eller endast homologerade (RL/RC).
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer select-none">
+          <input 
+            type="checkbox" 
+            checked={onlyHomologated}
+            onChange={(e) => setOnlyHomologated(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+          <span className="ml-3 text-sm font-semibold text-foreground">
+            Endast homologerade tävlingar
+          </span>
+        </label>
+      </div>
+
       {/* Personal Bests */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold border-l-4 border-secondary pl-3">Personliga Rekord</h2>
@@ -196,11 +291,11 @@ export default function AthleteDetail() {
             <div>
               <p className="text-xs font-semibold text-muted uppercase tracking-wider">Slalom PB</p>
               <h3 className="text-2xl font-black text-primary mt-1">
-                {profile.personalBests.slalom || 'Ej registrerat'}
+                {pbSlalom || 'Ej registrerat'}
               </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed mt-2">
-              Bästa slalomresultat registrerat i IWWF EMS.
+              Bästa slalomresultat i valda tävlingar.
             </p>
           </div>
 
@@ -209,11 +304,11 @@ export default function AthleteDetail() {
             <div>
               <p className="text-xs font-semibold text-muted uppercase tracking-wider">Trick PB</p>
               <h3 className="text-2xl font-black text-primary mt-1">
-                {profile.personalBests.tricks ? `${profile.personalBests.tricks} poäng` : 'Ej registrerat'}
+                {pbTricks ? `${pbTricks} poäng` : 'Ej registrerat'}
               </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed mt-2">
-              Högsta trickpoäng registrerat i IWWF EMS.
+              Högsta trickpoäng i valda tävlingar.
             </p>
           </div>
 
@@ -222,11 +317,11 @@ export default function AthleteDetail() {
             <div>
               <p className="text-xs font-semibold text-muted uppercase tracking-wider">Hopp PB</p>
               <h3 className="text-2xl font-black text-primary mt-1">
-                {profile.personalBests.jump ? `${profile.personalBests.jump} meter` : 'Ej registrerat'}
+                {pbJump ? `${pbJump} meter` : 'Ej registrerat'}
               </h3>
             </div>
             <p className="text-xs text-muted leading-relaxed mt-2">
-              Längsta hoppet registrerat i IWWF EMS.
+              Längsta hoppet i valda tävlingar.
             </p>
           </div>
         </div>
@@ -266,13 +361,13 @@ export default function AthleteDetail() {
       <div className="space-y-4">
         <h2 className="text-xl font-bold border-l-4 border-secondary pl-3 flex items-center gap-2">
           <History className="h-5 w-5 text-muted" />
-          Tävlingshistorik
+          Tävlingshistorik ({displayPerformances.length} resultat)
         </h2>
         
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          {profile.performances.length === 0 ? (
-            <div className="p-8 text-center text-muted">
-              Inga tävlingsresultat registrerade.
+          {displayPerformances.length === 0 ? (
+            <div className="p-12 text-center text-muted">
+              Inga tävlingsresultat matchar valda filter.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -281,7 +376,7 @@ export default function AthleteDetail() {
                   <tr className="bg-muted-bg border-b border-border">
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Datum</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Tävling</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Kod</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Kod / Status</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Land</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Klass / Gren</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted">Plac.</th>
@@ -290,7 +385,7 @@ export default function AthleteDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {profile.performances.map((perf, idx) => (
+                  {displayPerformances.map((perf, idx) => (
                     <tr 
                       key={perf.compCode + idx} 
                       className="hover:bg-muted-bg/50 transition-colors duration-150"
@@ -308,8 +403,21 @@ export default function AthleteDetail() {
                           {perf.compName}
                         </a>
                       </td>
-                      <td className="p-4 text-sm font-mono text-muted">
-                        {perf.compCode}
+                      <td className="p-4 text-sm">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-mono text-muted text-xs">{perf.compCode}</span>
+                          {perf.homologated ? (
+                            <span className="inline-flex items-center max-w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+                              Homologerad (RL)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center max-w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                              <HelpCircle className="h-2.5 w-2.5 mr-0.5" />
+                              Klubb/Nationell
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 text-sm text-muted">
                         {perf.country}

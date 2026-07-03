@@ -96,7 +96,7 @@ export async function fetchSwedishAthletes(): Promise<Record<string, { club: str
 /**
  * Fetches all waterski competitions in the rolling 12 months to build the Code -> Competition metadata map
  */
-export async function fetchCalendar(startDate: string, endDate: string): Promise<Record<string, Competition>> {
+export async function fetchCalendar(startDate: string, endDate: string, country: string = ''): Promise<Record<string, Competition>> {
   const params = new URLSearchParams();
   params.append('draw', '1');
   params.append('start', '0');
@@ -109,7 +109,7 @@ export async function fetchCalendar(startDate: string, endDate: string): Promise
   params.append('discipline', '7'); // Waterski
   params.append('homologation', '');
   params.append('confederationId', '');
-  params.append('country', '');
+  params.append('country', country);
   params.append('onlylive', 'false');
   params.append('onlycashprize', 'false');
   params.append('competitionType', '');
@@ -547,7 +547,8 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
         country,
         category,
         rank,
-        rounds
+        rounds,
+        homologated: true
       });
     });
   });

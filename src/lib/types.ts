@@ -53,6 +53,7 @@ export interface AthletePerformance {
   category: string;
   rank: string;
   rounds: string[];
+  homologated: boolean;
 }
 
 export interface AthleteProfile {
