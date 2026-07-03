@@ -28,8 +28,10 @@ export interface RankingEntry {
   category: string;
   yob: string;
   comp1Code: string;
+  comp1Name: string | null;
   score1: string;
   comp2Code: string;
+  comp2Name: string | null;
   score2: string;
   club: string | null;
   athleteCode: string | null;

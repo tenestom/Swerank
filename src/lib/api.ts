@@ -347,6 +347,13 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       const athleteCode = athleteData ? athleteData.code : null;
       const gender = athleteData ? athleteData.gender : cardGender;
 
+      // Look up competition names in calendar lookup
+      const comp1 = calendarLookup[comp1Code];
+      const comp1Name = comp1 ? comp1.name : comp1Code;
+
+      const comp2 = calendarLookup[comp2Code];
+      const comp2Name = comp2 ? comp2.name : comp2Code;
+
       // Determine category dynamically by age chart
       const category = getCategoryByAge(yob, year);
 
@@ -363,8 +370,10 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
         category,
         yob,
         comp1Code,
+        comp1Name,
         score1,
         comp2Code,
+        comp2Name,
         score2,
         club,
         athleteCode,

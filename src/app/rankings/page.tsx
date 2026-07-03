@@ -285,10 +285,10 @@ function RankingsContent() {
                     Bästa score
                   </th>
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Resultat 1 (Kod)
+                    Resultat 1 (Tävling)
                   </th>
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Resultat 2 (Kod)
+                    Resultat 2 (Tävling)
                   </th>
                 </tr>
               </thead>
@@ -326,14 +326,18 @@ function RankingsContent() {
                       <td className="p-4 text-sm">
                         <div className="flex flex-col">
                           <span className="font-semibold">{entry.score1}</span>
-                          <span className="text-xs text-muted font-mono">{entry.comp1Code}</span>
+                          <span className="text-xs text-muted max-w-[150px] truncate" title={entry.comp1Name || entry.comp1Code}>
+                            {entry.comp1Name || entry.comp1Code}
+                          </span>
                         </div>
                       </td>
                       <td className="p-4 text-sm">
                         {hasTwoScores ? (
                           <div className="flex flex-col">
                             <span className="font-semibold">{entry.score2}</span>
-                            <span className="text-xs text-muted font-mono">{entry.comp2Code}</span>
+                            <span className="text-xs text-muted max-w-[150px] truncate" title={entry.comp2Name || entry.comp2Code}>
+                              {entry.comp2Name || entry.comp2Code}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-muted text-xs italic">Ej tillgängligt</span>
