@@ -43,6 +43,166 @@ function getBetterSlalom(s1: string | null, s2: string): string {
   }
 }
 
+interface CategoryGroupSectionProps {
+  groupName: string;
+  entries: RankingEntry[];
+  onlyHomologated: boolean;
+  sortColumn: keyof RankingEntry;
+  sortDirection: 'asc' | 'desc';
+  handleSort: (column: keyof RankingEntry) => void;
+  getSortIcon: (column: keyof RankingEntry) => React.ReactNode;
+}
+
+function CategoryGroupSection({ 
+  groupName, 
+  entries, 
+  onlyHomologated,
+  sortColumn,
+  sortDirection,
+  handleSort,
+  getSortIcon
+}: CategoryGroupSectionProps) {
+  const [expanded, setExpanded] = useState<boolean>(false);
+
+  const top3 = entries.slice(0, 3);
+  const remaining = entries.slice(3);
+
+  const renderRow = (entry: RankingEntry, idx: number) => {
+    const activeScore1 = onlyHomologated ? entry.score1 : entry.allScore1;
+    const activeScore2 = onlyHomologated ? entry.score2 : entry.allScore2;
+    const activeComp1Code = onlyHomologated ? entry.comp1Code : entry.allComp1Code;
+    const activeComp1Name = onlyHomologated ? entry.comp1Name : entry.allComp1Name;
+    const activeComp2Code = onlyHomologated ? entry.comp2Code : entry.allComp2Code;
+    const activeComp2Name = onlyHomologated ? entry.comp2Name : entry.allComp2Name;
+    
+    const hasTwoScores = activeScore2 && activeScore2 !== '-';
+
+    return (
+      <tr 
+        key={entry.athleteId + idx} 
+        className="hover:bg-muted-bg/50 transition-colors duration-150 border-b border-border/60"
+      >
+        <td className="p-4 font-bold text-sm w-16">
+          {entry.rank}
+        </td>
+        <td className="p-4">
+          <Link 
+            href={`/athlete/${entry.athleteId}`} 
+            className="font-bold text-sm text-primary hover:underline"
+          >
+            {entry.name}
+          </Link>
+        </td>
+        <td className="p-4 text-sm font-medium w-24">
+          {entry.category}
+        </td>
+        <td className="p-4 text-sm text-muted w-20">
+          {entry.yob}
+        </td>
+        <td className="p-4 font-bold text-sm w-28">
+          {activeScore1}
+        </td>
+        <td className="p-4 text-sm min-w-[200px]">
+          <div className="flex flex-col">
+            <span className="font-semibold">{activeScore1}</span>
+            <span className="text-xs text-muted max-w-[180px] truncate" title={activeComp1Name || activeComp1Code}>
+              {activeComp1Name || activeComp1Code}
+            </span>
+          </div>
+        </td>
+        <td className="p-4 text-sm min-w-[200px]">
+          {hasTwoScores ? (
+            <div className="flex flex-col">
+              <span className="font-semibold">{activeScore2}</span>
+              <span className="text-xs text-muted max-w-[180px] truncate" title={activeComp2Name || activeComp2Code}>
+                {activeComp2Name || activeComp2Code}
+              </span>
+            </div>
+          ) : (
+            <span className="text-muted text-xs italic">Ej tillgängligt</span>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden mb-6">
+      {/* Category Section Header */}
+      <div className="bg-muted-bg/70 px-6 py-4 border-b border-border flex justify-between items-center">
+        <h3 className="font-extrabold text-base text-foreground tracking-tight flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          {groupName}
+        </h3>
+        <span className="text-xs font-semibold px-2 py-1 rounded bg-border text-muted">
+          {entries.length} {entries.length === 1 ? 'åkare' : 'åkare'}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-muted-bg/30 border-b border-border text-xs font-bold uppercase tracking-wider text-muted select-none">
+              <th 
+                onClick={() => handleSort('rank')}
+                className="p-4 cursor-pointer hover:bg-border/30 w-16"
+              >
+                <div className="flex items-center gap-1">
+                  Rank {getSortIcon('rank')}
+                </div>
+              </th>
+              <th 
+                onClick={() => handleSort('name')}
+                className="p-4 cursor-pointer hover:bg-border/30"
+              >
+                <div className="flex items-center gap-1">
+                  Namn {getSortIcon('name')}
+                </div>
+              </th>
+              <th className="p-4 w-24">Klass</th>
+              <th 
+                onClick={() => handleSort('yob')}
+                className="p-4 cursor-pointer hover:bg-border/30 w-20"
+              >
+                <div className="flex items-center gap-1">
+                  Född {getSortIcon('yob')}
+                </div>
+              </th>
+              <th className="p-4 w-28">Bästa score</th>
+              <th className="p-4 min-w-[200px]">Resultat 1 (Tävling)</th>
+              <th className="p-4 min-w-[200px]">Resultat 2 (Tävling)</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/40">
+            {top3.map((entry, idx) => renderRow(entry, idx))}
+            
+            {expanded && remaining.map((entry, idx) => renderRow(entry, idx + 3))}
+          </tbody>
+        </table>
+      </div>
+
+      {remaining.length > 0 && (
+        <div className="p-3 bg-muted-bg/20 border-t border-border/50 text-center">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-card border border-border hover:bg-muted-bg text-primary transition-all shadow-sm hover:shadow active:scale-95 duration-150"
+          >
+            {expanded ? (
+              <>
+                Dölj åkare
+              </>
+            ) : (
+              <>
+                Visa fler åkare ({remaining.length}+)
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RankingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -352,114 +512,51 @@ function RankingsContent() {
             </button>
           </div>
         ) : sortedRankings.length === 0 ? (
-          <div className="p-12 text-center text-muted">
+          <div className="p-12 text-center text-muted bg-card border border-border rounded-xl">
             Inga åkare hittades som matchar de angivna filtren.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-muted-bg border-b border-border sticky-header">
-                  <th 
-                    onClick={() => handleSort('rank')}
-                    className="p-4 text-xs font-bold uppercase tracking-wider text-muted cursor-pointer hover:bg-border/50 select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      Rank {getSortIcon('rank')}
-                    </div>
-                  </th>
-                  <th 
-                    onClick={() => handleSort('name')}
-                    className="p-4 text-xs font-bold uppercase tracking-wider text-muted cursor-pointer hover:bg-border/50 select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      Namn {getSortIcon('name')}
-                    </div>
-                  </th>
-                  <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Klass
-                  </th>
+          <div className="space-y-6">
+            {(() => {
+              const groupOrder = [
+                { category: 'U14', gender: 'F', name: 'U14 Damer' },
+                { category: 'U14', gender: 'M', name: 'U14 Herrar' },
+                { category: 'U17', gender: 'F', name: 'U17 Damer' },
+                { category: 'U17', gender: 'M', name: 'U17 Herrar' },
+                { category: 'U21', gender: 'F', name: 'U21 Damer' },
+                { category: 'U21', gender: 'M', name: 'U21 Herrar' },
+                { category: 'Open', gender: 'F', name: 'Open Damer' },
+                { category: 'Open', gender: 'M', name: 'Open Herrar' }
+              ];
 
-                  <th 
-                    onClick={() => handleSort('yob')}
-                    className="p-4 text-xs font-bold uppercase tracking-wider text-muted cursor-pointer hover:bg-border/50 select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      Född {getSortIcon('yob')}
-                    </div>
-                  </th>
-                  <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Bästa score
-                  </th>
-                  <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Resultat 1 (Tävling)
-                  </th>
-                  <th className="p-4 text-xs font-bold uppercase tracking-wider text-muted select-none">
-                    Resultat 2 (Tävling)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {sortedRankings.map((entry, idx) => {
-                  const activeScore1 = onlyHomologated ? entry.score1 : entry.allScore1;
-                  const activeScore2 = onlyHomologated ? entry.score2 : entry.allScore2;
-                  const activeComp1Code = onlyHomologated ? entry.comp1Code : entry.allComp1Code;
-                  const activeComp1Name = onlyHomologated ? entry.comp1Name : entry.allComp1Name;
-                  const activeComp2Code = onlyHomologated ? entry.comp2Code : entry.allComp2Code;
-                  const activeComp2Name = onlyHomologated ? entry.comp2Name : entry.allComp2Name;
-                  
-                  const hasTwoScores = activeScore2 && activeScore2 !== '-';
-                  return (
-                    <tr 
-                      key={entry.athleteId + idx} 
-                      className="hover:bg-muted-bg/50 transition-colors duration-150 animate-fade-in"
-                    >
-                      <td className="p-4 font-bold text-sm">
-                        {entry.rank || idx + 1}
-                      </td>
-                      <td className="p-4">
-                        <Link 
-                          href={`/athlete/${entry.athleteId}`} 
-                          className="font-bold text-sm text-primary hover:underline"
-                        >
-                          {entry.name}
-                        </Link>
-                      </td>
-                      <td className="p-4 text-sm font-medium">
-                        {entry.category}
-                      </td>
+              const activeGroups = groupOrder.filter(g => {
+                const matchesGender = genderFilter === 'all' || g.gender === genderFilter;
+                const matchesClass = classFilter === 'all' || g.category.toUpperCase() === classFilter.toUpperCase();
+                return matchesGender && matchesClass;
+              });
 
-                      <td className="p-4 text-sm text-muted">
-                        {entry.yob}
-                      </td>
-                      <td className="p-4 font-bold text-sm">
-                        {activeScore1}
-                      </td>
-                      <td className="p-4 text-sm">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{activeScore1}</span>
-                          <span className="text-xs text-muted max-w-[150px] truncate" title={activeComp1Name || activeComp1Code}>
-                            {activeComp1Name || activeComp1Code}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-sm">
-                        {hasTwoScores ? (
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{activeScore2}</span>
-                            <span className="text-xs text-muted max-w-[150px] truncate" title={activeComp2Name || activeComp2Code}>
-                              {activeComp2Name || activeComp2Code}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted text-xs italic">Ej tillgängligt</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              return activeGroups.map(group => {
+                const groupEntries = sortedRankings.filter(entry => 
+                  entry.category.toUpperCase() === group.category.toUpperCase() && 
+                  entry.gender === group.gender
+                );
+
+                if (groupEntries.length === 0) return null;
+
+                return (
+                  <CategoryGroupSection 
+                    key={group.category + group.gender}
+                    groupName={group.name}
+                    entries={groupEntries}
+                    onlyHomologated={onlyHomologated}
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    handleSort={handleSort}
+                    getSortIcon={getSortIcon}
+                  />
+                );
+              });
+            })()}
           </div>
         )}
       </div>
