@@ -27,12 +27,23 @@ export interface RankingEntry {
   federation: string;
   category: string;
   yob: string;
+  
+  // Homologated scores
   comp1Code: string;
   comp1Name: string | null;
   score1: string;
   comp2Code: string;
   comp2Name: string | null;
   score2: string;
+  
+  // All scores (including non-homologated)
+  allComp1Code: string;
+  allComp1Name: string | null;
+  allScore1: string;
+  allComp2Code: string;
+  allComp2Name: string | null;
+  allScore2: string;
+  
   club: string | null;
   athleteCode: string | null;
   bestScore: string;

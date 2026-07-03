@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, startTransition } from 'react';
+import { useState, useEffect, Suspense, startTransition, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RankingEntry } from '@/lib/types';
@@ -15,6 +15,33 @@ import {
   User,
   Users
 } from 'lucide-react';
+
+function getBetterSlalom(s1: string | null, s2: string): string {
+  if (!s1) return s2;
+  
+  function parseSlalom(s: string) {
+    const parts = s.split('/');
+    const buoys = parseFloat(parts[0]) || 0;
+    const speed = parseFloat(parts[1]) || 0;
+    const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+    return { buoys, speed, rope };
+  }
+
+  try {
+    const p1 = parseSlalom(s1);
+    const p2 = parseSlalom(s2);
+
+    if (p1.speed !== p2.speed) {
+      return p1.speed > p2.speed ? s1 : s2;
+    }
+    if (p1.rope !== p2.rope) {
+      return p1.rope < p2.rope ? s1 : s2;
+    }
+    return p1.buoys >= p2.buoys ? s1 : s2;
+  } catch (e) {
+    return s1;
+  }
+}
 
 function RankingsContent() {
   const router = useRouter();
@@ -36,6 +63,30 @@ function RankingsContent() {
   // Sorting States
   const [sortColumn, setSortColumn] = useState<keyof RankingEntry>('rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const [onlyHomologated, setOnlyHomologated] = useState<boolean>(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('swerank_homologated_only');
+    if (saved !== null) {
+      setOnlyHomologated(saved === 'true');
+    }
+
+    const handleSync = () => {
+      const updated = localStorage.getItem('swerank_homologated_only');
+      if (updated !== null) {
+        setOnlyHomologated(updated === 'true');
+      }
+    };
+    
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('swerank_homologation_sync', handleSync);
+    
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('swerank_homologation_sync', handleSync);
+    };
+  }, []);
 
   useEffect(() => {
     // Sync state with URL parameter if it changes
@@ -85,8 +136,68 @@ function RankingsContent() {
     }
   };
 
+  // Recalculate ranks client-side based on the homologation setting
+  const processedRankings = useMemo(() => {
+    // Group by gender and category
+    const groups: Record<string, RankingEntry[]> = {};
+    rankings.forEach(entry => {
+      const key = `${entry.gender}_${entry.category}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push({ ...entry });
+    });
+
+    const result: RankingEntry[] = [];
+    Object.keys(groups).forEach(key => {
+      const groupEntries = groups[key];
+      
+      // Sort group entries by their active scores
+      groupEntries.sort((a, b) => {
+        const scoreA1 = onlyHomologated ? a.score1 : a.allScore1;
+        const scoreB1 = onlyHomologated ? b.score1 : b.allScore1;
+        const scoreA2 = onlyHomologated ? a.score2 : a.allScore2;
+        const scoreB2 = onlyHomologated ? b.score2 : b.allScore2;
+
+        if (discipline === 'slalom') {
+          const better = getBetterSlalom(scoreA1, scoreB1);
+          if (better === scoreA1 && better !== scoreB1) return -1;
+          if (better === scoreB1 && better !== scoreA1) return 1;
+          
+          const better2 = getBetterSlalom(scoreA2, scoreB2);
+          if (better2 === scoreA2 && better2 !== scoreB2) return -1;
+          if (better2 === scoreB2 && better2 !== scoreA2) return 1;
+          return 0;
+        } else if (discipline === 'tricks') {
+          const aVal = parseInt(scoreA1, 10) || 0;
+          const bVal = parseInt(scoreB1, 10) || 0;
+          if (aVal !== bVal) return bVal - aVal;
+          
+          const aVal2 = parseInt(scoreA2, 10) || 0;
+          const bVal2 = parseInt(scoreB2, 10) || 0;
+          return bVal2 - aVal2;
+        } else {
+          const aVal = parseFloat(scoreA1) || 0;
+          const bVal = parseFloat(scoreB1) || 0;
+          if (aVal !== bVal) return bVal - aVal;
+          
+          const aVal2 = parseFloat(scoreA2) || 0;
+          const bVal2 = parseFloat(scoreB2) || 0;
+          return bVal2 - aVal2;
+        }
+      });
+
+      // Re-assign ranks and align bestScore property
+      groupEntries.forEach((entry, idx) => {
+        entry.rank = idx + 1;
+        entry.bestScore = onlyHomologated ? entry.score1 : entry.allScore1;
+        result.push(entry);
+      });
+    });
+
+    return result;
+  }, [rankings, onlyHomologated, discipline]);
+
   // Perform filtering
-  const filteredRankings = rankings.filter((entry) => {
+  const filteredRankings = processedRankings.filter((entry) => {
     // Gender Filter
     const matchesGender = 
       genderFilter === 'all' || 
@@ -297,7 +408,14 @@ function RankingsContent() {
               </thead>
               <tbody className="divide-y divide-border">
                 {sortedRankings.map((entry, idx) => {
-                  const hasTwoScores = entry.score2 && entry.score2 !== '-';
+                  const activeScore1 = onlyHomologated ? entry.score1 : entry.allScore1;
+                  const activeScore2 = onlyHomologated ? entry.score2 : entry.allScore2;
+                  const activeComp1Code = onlyHomologated ? entry.comp1Code : entry.allComp1Code;
+                  const activeComp1Name = onlyHomologated ? entry.comp1Name : entry.allComp1Name;
+                  const activeComp2Code = onlyHomologated ? entry.comp2Code : entry.allComp2Code;
+                  const activeComp2Name = onlyHomologated ? entry.comp2Name : entry.allComp2Name;
+                  
+                  const hasTwoScores = activeScore2 && activeScore2 !== '-';
                   return (
                     <tr 
                       key={entry.athleteId + idx} 
@@ -324,22 +442,22 @@ function RankingsContent() {
                         {entry.yob}
                       </td>
                       <td className="p-4 font-bold text-sm">
-                        {entry.bestScore}
+                        {activeScore1}
                       </td>
                       <td className="p-4 text-sm">
                         <div className="flex flex-col">
-                          <span className="font-semibold">{entry.score1}</span>
-                          <span className="text-xs text-muted max-w-[150px] truncate" title={entry.comp1Name || entry.comp1Code}>
-                            {entry.comp1Name || entry.comp1Code}
+                          <span className="font-semibold">{activeScore1}</span>
+                          <span className="text-xs text-muted max-w-[150px] truncate" title={activeComp1Name || activeComp1Code}>
+                            {activeComp1Name || activeComp1Code}
                           </span>
                         </div>
                       </td>
                       <td className="p-4 text-sm">
                         {hasTwoScores ? (
                           <div className="flex flex-col">
-                            <span className="font-semibold">{entry.score2}</span>
-                            <span className="text-xs text-muted max-w-[150px] truncate" title={entry.comp2Name || entry.comp2Code}>
-                              {entry.comp2Name || entry.comp2Code}
+                            <span className="font-semibold">{activeScore2}</span>
+                            <span className="text-xs text-muted max-w-[150px] truncate" title={activeComp2Name || activeComp2Code}>
+                              {activeComp2Name || activeComp2Code}
                             </span>
                           </div>
                         ) : (

@@ -263,6 +263,26 @@ async function fetchSwedishRankingsHtml(eventId: number, seasonId: number, month
   return await finalRes.text();
 }
 
+function isHomologatedCode(abbr: string | null | undefined): boolean {
+  if (!abbr) return false;
+  const a = abbr.toUpperCase();
+  return a === 'RC' || a === 'RL' || a === 'R' || a === 'L' || a === 'E';
+}
+
+function parseDateStr(str: string): Date | null {
+  const parts = str.trim().split(' ');
+  if (parts.length < 3) return null;
+  const yr = parseInt(parts[parts.length - 1], 10);
+  const mName = parts[parts.length - 2].toLowerCase();
+  const months: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  };
+  const mKey = Object.keys(months).find(k => mName.startsWith(k));
+  if (mKey === undefined || isNaN(yr)) return null;
+  return new Date(yr, months[mKey], 15);
+}
+
 /**
  * Helper to determine age category dynamically based on year of birth and reference year
  */
@@ -375,6 +395,12 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
         comp2Code,
         comp2Name,
         score2,
+        allComp1Code: comp1Code,
+        allComp1Name: comp1Name,
+        allScore1: score1,
+        allComp2Code: comp2Code,
+        allComp2Name: comp2Name,
+        allScore2: score2,
         club,
         athleteCode,
         bestScore
@@ -403,6 +429,116 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       }
     }
   });
+
+  // Fetch profiles and compute both homologated and all-competition scores
+  const startPeriod = new Date(year - 1, month - 1, 1);
+  const endPeriod = new Date(year, month - 1, 31);
+  const skiers = Object.values(uniqueEntries);
+  const concurrencyLimit = 15;
+
+  for (let i = 0; i < skiers.length; i += concurrencyLimit) {
+    const batch = skiers.slice(i, i + concurrencyLimit);
+    await Promise.all(batch.map(async (entry) => {
+      try {
+        const profile = await getAthleteProfile(entry.athleteId);
+        
+        const periodPerfs = profile.performances.filter(perf => {
+          const perfDate = parseDateStr(perf.dateStr);
+          if (!perfDate) return false;
+          return perfDate >= startPeriod && perfDate <= endPeriod;
+        });
+
+        const eventPerfs = periodPerfs.filter(perf => {
+          const cat = perf.category.toLowerCase();
+          if (eventId === 10) return cat.includes('slalom');
+          if (eventId === 11) return cat.includes('trick');
+          if (eventId === 12) return cat.includes('jump') || cat.includes('hopp');
+          return false;
+        });
+
+        interface ScoreCandidate {
+          score: string;
+          code: string;
+          name: string;
+          homologated: boolean;
+        }
+
+        const candidates: ScoreCandidate[] = [];
+        eventPerfs.forEach(perf => {
+          const comp = calendarLookup[perf.compCode.toUpperCase()];
+          const homologated = comp 
+            ? isHomologatedCode(comp.homologation) 
+            : !perf.compCode.toUpperCase().includes('SWE');
+
+          perf.rounds.forEach(score => {
+            candidates.push({
+              score,
+              code: perf.compCode,
+              name: perf.compName || comp?.name || perf.compCode,
+              homologated
+            });
+          });
+        });
+
+        const sortCandidates = (list: ScoreCandidate[]) => {
+          return list.sort((a, b) => {
+            if (eventId === 10) {
+              const better = getBetterSlalom(a.score, b.score);
+              if (better === a.score && better !== b.score) return -1;
+              if (better === b.score && better !== a.score) return 1;
+              return 0;
+            } else if (eventId === 11) {
+              const aVal = parseInt(a.score, 10) || 0;
+              const bVal = parseInt(b.score, 10) || 0;
+              return bVal - aVal;
+            } else {
+              const aVal = parseFloat(a.score) || 0;
+              const bVal = parseFloat(b.score) || 0;
+              return bVal - aVal;
+            }
+          });
+        };
+
+        const sortedAll = sortCandidates([...candidates]);
+        const sortedHomologated = sortCandidates(candidates.filter(c => c.homologated));
+
+        if (sortedAll.length > 0) {
+          entry.allScore1 = sortedAll[0].score;
+          entry.allComp1Code = sortedAll[0].code;
+          entry.allComp1Name = sortedAll[0].name;
+          entry.bestScore = sortedAll[0].score;
+          
+          if (sortedAll.length > 1) {
+            entry.allScore2 = sortedAll[1].score;
+            entry.allComp2Code = sortedAll[1].code;
+            entry.allComp2Name = sortedAll[1].name;
+          } else {
+            entry.allScore2 = '-';
+            entry.allComp2Code = '';
+            entry.allComp2Name = '';
+          }
+        }
+
+        if (sortedHomologated.length > 0) {
+          entry.score1 = sortedHomologated[0].score;
+          entry.comp1Code = sortedHomologated[0].code;
+          entry.comp1Name = sortedHomologated[0].name;
+          
+          if (sortedHomologated.length > 1) {
+            entry.score2 = sortedHomologated[1].score;
+            entry.comp2Code = sortedHomologated[1].code;
+            entry.comp2Name = sortedHomologated[1].name;
+          } else {
+            entry.score2 = '-';
+            entry.comp2Code = '';
+            entry.comp2Name = '';
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to merge profile scores for athlete ${entry.athleteId}:`, err);
+      }
+    }));
+  }
 
   // Group by gender and category
   const groups: Record<string, RankingEntry[]> = {};
