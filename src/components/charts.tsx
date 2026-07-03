@@ -86,7 +86,8 @@ export default function PerformanceChart({ data, title, yLabel }: PerformanceCha
 
 // Slalom converter
 export function slalomToNumeric(score: string): number {
-  const parts = score.split('/');
+  const clean = score.replace(',', '.');
+  const parts = clean.split('/');
   const buoys = parseFloat(parts[0]) || 0;
   const speed = parseFloat(parts[1]) || 0;
   const rope = parts[2] ? parseFloat(parts[2]) : 18.25;

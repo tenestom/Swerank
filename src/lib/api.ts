@@ -825,7 +825,8 @@ function getBetterSlalom(s1: string | null, s2: string): string {
   // Parse Slalom score: e.g. "5.00/58/12.00" or "4.50/55"
   // Format: Buoys/Speed/Rope
   function parseSlalom(s: string) {
-    const parts = s.split('/');
+    const clean = s.replace(',', '.');
+    const parts = clean.split('/');
     const buoys = parseFloat(parts[0]) || 0;
     const speed = parseFloat(parts[1]) || 0;
     // Default rope length is 18.25m if not specified
@@ -859,7 +860,7 @@ function getBetterTricks(s1: string | null, s2: string): string {
 
 function getBetterJump(s1: string | null, s2: string): string {
   if (!s1) return s2;
-  const j1 = parseFloat(s1) || 0;
-  const j2 = parseFloat(s2) || 0;
+  const j1 = parseFloat(s1.replace(',', '.')) || 0;
+  const j2 = parseFloat(s2.replace(',', '.')) || 0;
   return j1 >= j2 ? s1 : s2;
 }

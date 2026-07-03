@@ -24,7 +24,8 @@ function getBetterSlalom(s1: string | null, s2: string): string {
   if (!s1) return s2;
   
   function parseSlalom(s: string) {
-    const parts = s.split('/');
+    const clean = s.replace(',', '.');
+    const parts = clean.split('/');
     const buoys = parseFloat(parts[0]) || 0;
     const speed = parseFloat(parts[1]) || 0;
     const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
@@ -56,8 +57,8 @@ function getBetterTricks(s1: string | null, s2: string): string {
 
 function getBetterJump(s1: string | null, s2: string): string {
   if (!s1) return s2;
-  const j1 = parseFloat(s1) || 0;
-  const j2 = parseFloat(s2) || 0;
+  const j1 = parseFloat(s1.replace(',', '.')) || 0;
+  const j2 = parseFloat(s2.replace(',', '.')) || 0;
   return j1 >= j2 ? s1 : s2;
 }
 

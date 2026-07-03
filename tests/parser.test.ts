@@ -7,7 +7,8 @@ function getBetterSlalom(s1: string | null, s2: string): string {
   if (!s1) return s2;
   
   function parseSlalom(s: string) {
-    const parts = s.split('/');
+    const clean = s.replace(',', '.');
+    const parts = clean.split('/');
     const buoys = parseFloat(parts[0]) || 0;
     const speed = parseFloat(parts[1]) || 0;
     const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
@@ -39,8 +40,8 @@ function getBetterTricks(s1: string | null, s2: string): string {
 
 function getBetterJump(s1: string | null, s2: string): string {
   if (!s1) return s2;
-  const j1 = parseFloat(s1) || 0;
-  const j2 = parseFloat(s2) || 0;
+  const j1 = parseFloat(s1.replace(',', '.')) || 0;
+  const j2 = parseFloat(s2.replace(',', '.')) || 0;
   return j1 >= j2 ? s1 : s2;
 }
 
@@ -62,6 +63,12 @@ describe('Slalom Score Conversion to Numeric Value', () => {
     const manyBuoys = slalomToNumeric('4.00/58/13.00');
     expect(manyBuoys).toBeGreaterThan(fewBuoys);
   });
+
+  it('should handle decimal commas correctly in slalomToNumeric', () => {
+    const dotScore = slalomToNumeric('3.50/58/13.00');
+    const commaScore = slalomToNumeric('3,50/58/13.00');
+    expect(commaScore).toBe(dotScore);
+  });
 });
 
 describe('Personal Bests Selection Helpers', () => {
@@ -78,6 +85,11 @@ describe('Personal Bests Selection Helpers', () => {
     it('should select the score with more buoys if speed and rope match', () => {
       expect(getBetterSlalom('2.50/58/12.00', '4.00/58/12.00')).toBe('4.00/58/12.00');
     });
+
+    it('should handle decimal commas correctly in slalom', () => {
+      expect(getBetterSlalom('3.00/58/18.25', '3,50/58/18.25')).toBe('3,50/58/18.25');
+      expect(getBetterSlalom('3,50/58/18.25', '3.00/58/18.25')).toBe('3,50/58/18.25');
+    });
   });
 
   describe('Tricks PBs', () => {
@@ -91,6 +103,11 @@ describe('Personal Bests Selection Helpers', () => {
     it('should select the longer jump distance', () => {
       expect(getBetterJump('28.5', '32.1')).toBe('32.1');
       expect(getBetterJump('41.20', '39.80')).toBe('41.20');
+    });
+
+    it('should handle decimal commas correctly in jump', () => {
+      expect(getBetterJump('25,2', '25.0')).toBe('25,2');
+      expect(getBetterJump('25.0', '25,2')).toBe('25,2');
     });
   });
 });
