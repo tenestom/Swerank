@@ -23,6 +23,7 @@ export interface RankingEntry {
   worldRank: string;
   athleteId: string;
   name: string;
+  gender: 'M' | 'F';
   federation: string;
   category: string;
   yob: string;

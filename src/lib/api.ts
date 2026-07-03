@@ -264,6 +264,19 @@ async function fetchSwedishRankingsHtml(eventId: number, seasonId: number, month
 }
 
 /**
+ * Helper to determine age category dynamically based on year of birth and reference year
+ */
+function getCategoryByAge(yobStr: string, refYear: number): string {
+  const yob = parseInt(yobStr, 10);
+  if (isNaN(yob)) return 'Open';
+  const age = refYear - yob;
+  if (age <= 14) return 'U14';
+  if (age >= 15 && age <= 17) return 'U17';
+  if (age >= 18 && age <= 21) return 'U21';
+  return 'Open';
+}
+
+/**
  * Main function to fetch, merge and return parsed Swedish ranking entries for a given discipline
  */
 export async function getSwedishRankings(eventId: number, year: number, month: number): Promise<RankingEntry[]> {
@@ -287,7 +300,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
   ]);
 
   const $ = cheerio.load(rawHtml);
-  const entries: RankingEntry[] = [];
+  const rawEntries: RankingEntry[] = [];
 
   // Parse all card containers that hold tables
   $('.card').each((_idx, element) => {
@@ -296,22 +309,9 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
 
     const titleText = header.text().trim();
     
-    // Categorize by parsing the card header title
-    // Examples: "Open Men Slalom July 2026", "Under 14 Women Slalom July 2026", "Over 35 Men Slalom July 2026"
-    // We only want: U14, U17, U21, Open
-    let category = '';
-    if (titleText.toLowerCase().includes('under 14') || titleText.toLowerCase().includes('u14')) {
-      category = 'U14';
-    } else if (titleText.toLowerCase().includes('under 17') || titleText.toLowerCase().includes('u17')) {
-      category = 'U17';
-    } else if (titleText.toLowerCase().includes('under 21') || titleText.toLowerCase().includes('u21')) {
-      category = 'U21';
-    } else if (titleText.toLowerCase().includes('open')) {
-      category = 'Open';
-    } else {
-      // Skip master/seniors classes (Over 35, 45, etc.) unless requested
-      return;
-    }
+    // Determine card gender
+    const isWomen = titleText.toLowerCase().includes('women') || titleText.toLowerCase().includes(' f ') || titleText.toLowerCase().includes('female') || titleText.toLowerCase().includes('damer');
+    const cardGender: 'M' | 'F' = isWomen ? 'F' : 'M';
 
     const table = $(element).find('table');
     if (!table.length) return;
@@ -329,7 +329,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       const name = nameLink.text().trim();
       const href = nameLink.attr('href') || '';
       
-      // Extract Athlete ID from href (e.g. /Athletes/Profile?Id=d124af93-2d19-4a53-b86c-349f922bd2dc)
+      // Extract Athlete ID from href
       const idMatch = href.match(/[?&]Id=([^&]+)/i);
       const athleteId = idMatch ? idMatch[1].toLowerCase() : '';
 
@@ -345,15 +345,20 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       const athleteData = athletesLookup[athleteId];
       const club = athleteData ? athleteData.club : null;
       const athleteCode = athleteData ? athleteData.code : null;
+      const gender = athleteData ? athleteData.gender : cardGender;
 
-      // Best score is just the highest raw value, or we can use score1 (which is usually the best score)
+      // Determine category dynamically by age chart
+      const category = getCategoryByAge(yob, year);
+
+      // Best score is just the highest raw value, or we can use score1
       const bestScore = score1; 
 
-      entries.push({
+      rawEntries.push({
         rank,
         worldRank,
         athleteId,
         name,
+        gender,
         federation,
         category,
         yob,
@@ -368,7 +373,81 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
     });
   });
 
-  return entries;
+  // De-duplicate entries by athleteId, keeping the better score
+  const uniqueEntries: Record<string, RankingEntry> = {};
+  rawEntries.forEach(entry => {
+    const existing = uniqueEntries[entry.athleteId];
+    if (!existing) {
+      uniqueEntries[entry.athleteId] = entry;
+    } else {
+      let isNewBetter = false;
+      if (eventId === 10) {
+        isNewBetter = getBetterSlalom(existing.bestScore, entry.bestScore) === entry.bestScore;
+      } else if (eventId === 11) {
+        isNewBetter = getBetterTricks(existing.bestScore, entry.bestScore) === entry.bestScore;
+      } else if (eventId === 12) {
+        isNewBetter = getBetterJump(existing.bestScore, entry.bestScore) === entry.bestScore;
+      }
+      
+      if (isNewBetter) {
+        uniqueEntries[entry.athleteId] = entry;
+      }
+    }
+  });
+
+  // Group by gender and category
+  const groups: Record<string, RankingEntry[]> = {};
+  Object.values(uniqueEntries).forEach(entry => {
+    const key = `${entry.gender}_${entry.category}`;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(entry);
+  });
+
+  // Sort and rank each group
+  const finalEntries: RankingEntry[] = [];
+  Object.keys(groups).forEach(key => {
+    const groupEntries = groups[key];
+    
+    groupEntries.sort((a, b) => {
+      if (eventId === 10) {
+        const better = getBetterSlalom(a.bestScore, b.bestScore);
+        if (better === a.bestScore && better !== b.bestScore) return -1;
+        if (better === b.bestScore && better !== a.bestScore) return 1;
+        
+        // If equal, compare score2
+        const better2 = getBetterSlalom(a.score2, b.score2);
+        if (better2 === a.score2 && better2 !== b.score2) return -1;
+        if (better2 === b.score2 && better2 !== a.score2) return 1;
+        return 0;
+      } else if (eventId === 11) {
+        const aVal = parseInt(a.bestScore, 10) || 0;
+        const bVal = parseInt(b.bestScore, 10) || 0;
+        if (aVal !== bVal) return bVal - aVal;
+        
+        const aVal2 = parseInt(a.score2, 10) || 0;
+        const bVal2 = parseInt(b.score2, 10) || 0;
+        return bVal2 - aVal2;
+      } else {
+        const aVal = parseFloat(a.bestScore) || 0;
+        const bVal = parseFloat(b.bestScore) || 0;
+        if (aVal !== bVal) return bVal - aVal;
+        
+        const aVal2 = parseFloat(a.score2) || 0;
+        const bVal2 = parseFloat(b.score2) || 0;
+        return bVal2 - aVal2;
+      }
+    });
+
+    // Assign sequential ranks within the group
+    groupEntries.forEach((entry, idx) => {
+      entry.rank = idx + 1;
+      finalEntries.push(entry);
+    });
+  });
+
+  return finalEntries;
 }
 
 /**

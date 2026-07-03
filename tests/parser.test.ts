@@ -94,3 +94,46 @@ describe('Personal Bests Selection Helpers', () => {
     });
   });
 });
+
+function getCategoryByAge(yobStr: string, refYear: number): string {
+  const yob = parseInt(yobStr, 10);
+  if (isNaN(yob)) return 'Open';
+  const age = refYear - yob;
+  if (age <= 14) return 'U14';
+  if (age >= 15 && age <= 17) return 'U17';
+  if (age >= 18 && age <= 21) return 'U21';
+  return 'Open';
+}
+
+describe('Age Category Selection by Birth Year', () => {
+  it('should map age <= 14 to U14', () => {
+    expect(getCategoryByAge('2012', 2026)).toBe('U14'); // Age 14
+    expect(getCategoryByAge('2015', 2026)).toBe('U14'); // Age 11 (U12)
+    expect(getCategoryByAge('2018', 2026)).toBe('U14'); // Age 8 (U10)
+  });
+
+  it('should map age 15-17 to U17', () => {
+    expect(getCategoryByAge('2011', 2026)).toBe('U17'); // Age 15
+    expect(getCategoryByAge('2009', 2026)).toBe('U17'); // Age 17
+  });
+
+  it('should map age 18-21 to U21', () => {
+    expect(getCategoryByAge('2008', 2026)).toBe('U21'); // Age 18
+    expect(getCategoryByAge('2005', 2026)).toBe('U21'); // Age 21
+  });
+
+  it('should map age >= 22 to Open', () => {
+    expect(getCategoryByAge('2004', 2026)).toBe('Open'); // Age 22
+    expect(getCategoryByAge('1990', 2026)).toBe('Open'); // Age 36 (35+)
+    expect(getCategoryByAge('1975', 2026)).toBe('Open'); // Age 51 (45+)
+  });
+
+  it('should remain correct when moving to next year (dynamic check)', () => {
+    // In 2027:
+    expect(getCategoryByAge('2013', 2027)).toBe('U14'); // Age 14
+    expect(getCategoryByAge('2012', 2027)).toBe('U17'); // Age 15 (promoted from U14 to U17)
+    expect(getCategoryByAge('2009', 2027)).toBe('U21'); // Age 18 (promoted from U17 to U21)
+    expect(getCategoryByAge('2005', 2027)).toBe('Open'); // Age 22 (promoted from U21 to Open)
+  });
+});
+

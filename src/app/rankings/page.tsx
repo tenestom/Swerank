@@ -87,15 +87,9 @@ function RankingsContent() {
   // Perform filtering
   const filteredRankings = rankings.filter((entry) => {
     // Gender Filter
-    const entryGender = entry.category.toLowerCase().includes('women') || entry.category.toLowerCase().includes(' f ') || entry.category.toLowerCase().includes('female') || entry.category.toLowerCase().includes('damer') ? 'F' : 'M';
-    // Wait, let's look at the parsed category name or gender.
-    // In our parser we set the gender on the entry from athletes list if matched, or we can parse from category
-    // Let's check entry.category: e.g. "Open Men Slalom July 2026", "Under 14 Women Slalom July 2026"
-    // Wait! Let's check the category string: "Under 14", "Open", etc. It has classFilter category
     const matchesGender = 
       genderFilter === 'all' || 
-      (genderFilter === 'M' && (entry.category.toLowerCase().includes('men') || !entry.category.toLowerCase().includes('women'))) ||
-      (genderFilter === 'F' && entry.category.toLowerCase().includes('women'));
+      entry.gender === genderFilter;
 
     // Category Class Filter
     const matchesClass = 
