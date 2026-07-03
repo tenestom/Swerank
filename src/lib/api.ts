@@ -25,7 +25,7 @@ async function fetchWithCookies(urlStr: string, options: RequestInit = {}): Prom
 /**
  * Fetches all Swedish waterski athletes from IWWF EMS to build the ID -> Club map
  */
-export async function fetchSwedishAthletes(): Promise<Record<string, { club: string | null; code: string; gender: 'M' | 'F' }>> {
+export async function fetchSwedishAthletes(): Promise<Record<string, { name: string; yob: string; club: string | null; code: string; gender: 'M' | 'F' }>> {
   const params = new URLSearchParams();
   params.append('draw', '1');
   params.append('start', '0');
@@ -79,10 +79,16 @@ export async function fetchSwedishAthletes(): Promise<Record<string, { club: str
   const payload = await res.json();
   const records = payload.data || [];
   
-  const lookup: Record<string, { club: string | null; code: string; gender: 'M' | 'F' }> = {};
+  const lookup: Record<string, { name: string; yob: string; club: string | null; code: string; gender: 'M' | 'F' }> = {};
   for (const item of records) {
     if (item.Id) {
+      const firstName = item.FirstName ? item.FirstName.trim() : '';
+      const lastName = item.LastName ? item.LastName.trim() : '';
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : (item.FullName || '').trim();
+      
       lookup[item.Id.toLowerCase()] = {
+        name: fullName,
+        yob: item.YobFormatter ? item.YobFormatter.trim() : '',
         club: item.Club ? item.Club.trim() : null,
         code: item.Code ? item.Code.trim() : '',
         gender: item.ComputedGender === 'M' ? 'M' : 'F'
@@ -296,6 +302,33 @@ function getCategoryByAge(yobStr: string, refYear: number): string {
   return 'Open';
 }
 
+async function fetchCompetitionAthleteIds(compId: string): Promise<string[]> {
+  try {
+    const url = `${EMS_BASE}/Competitions/Details?id=${compId}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      }
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    
+    const ids: string[] = [];
+    $('a').each((_, el) => {
+      const href = $(el).attr('href') || '';
+      const match = href.match(/\/Athletes\/Profile\/([^/?&]+)/i);
+      if (match) {
+        ids.push(match[1].toLowerCase());
+      }
+    });
+    return ids;
+  } catch (err) {
+    console.error(`Failed to fetch competition athlete IDs for ${compId}:`, err);
+    return [];
+  }
+}
+
 /**
  * Main function to fetch, merge and return parsed Swedish ranking entries for a given discipline
  */
@@ -310,7 +343,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
   const [athletesLookup, calendarLookup, rawHtml] = await Promise.all([
     fetchSwedishAthletes().catch(err => {
       console.error("Failed to load athletes roster, continuing without clubs:", err);
-      return {} as Record<string, { club: string | null; code: string; gender: 'M' | 'F' }>;
+      return {} as Record<string, { name: string; yob: string; club: string | null; code: string; gender: 'M' | 'F' }>;
     }),
     fetchCalendar(startDate, endDate).catch(err => {
       console.error("Failed to load competition calendar, continuing with raw codes:", err);
@@ -428,6 +461,53 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
         uniqueEntries[entry.athleteId] = entry;
       }
     }
+  });
+
+  // Fetch competitor athlete IDs from all Swedish competitions in the calendar
+  const swedishComps = Object.values(calendarLookup).filter(c => c.countryAbbr === 'SWE');
+  const compAthleteIdsLists = await Promise.all(
+    swedishComps.map(comp => fetchCompetitionAthleteIds(comp.id).catch(() => []))
+  );
+
+  const candidateIds = new Set<string>();
+  compAthleteIdsLists.flat().forEach(id => candidateIds.add(id));
+
+  // Add any missing Swedish competitors from these competitions to uniqueEntries with default values
+  candidateIds.forEach(athleteId => {
+    if (uniqueEntries[athleteId]) return;
+    const athlete = athletesLookup[athleteId];
+    if (!athlete) return; // not Swedish or not in our athletes registry
+
+    const category = getCategoryByAge(athlete.yob, year);
+
+    uniqueEntries[athleteId] = {
+      rank: 999,
+      worldRank: '-',
+      athleteId,
+      name: athlete.name,
+      gender: athlete.gender,
+      federation: 'SWE',
+      category,
+      yob: athlete.yob,
+      
+      comp1Code: '',
+      comp1Name: '',
+      score1: '-',
+      comp2Code: '',
+      comp2Name: '',
+      score2: '-',
+      
+      allComp1Code: '',
+      allComp1Name: '',
+      allScore1: '-',
+      allComp2Code: '',
+      allComp2Name: '',
+      allScore2: '-',
+      
+      club: athlete.club,
+      athleteCode: athlete.code,
+      bestScore: '-'
+    };
   });
 
   // Fetch profiles and compute both homologated and all-competition scores
