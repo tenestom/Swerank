@@ -17,6 +17,7 @@ import {
   CheckCircle,
   HelpCircle
 } from 'lucide-react';
+import HomologationToggle from '@/components/HomologationToggle';
 
 // Client-side score comparison helpers
 function getBetterSlalom(s1: string | null, s2: string): string {
@@ -92,6 +93,28 @@ export default function AthleteDetail() {
   useEffect(() => {
     fetchProfile();
   }, [id]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('swerank_homologated_only');
+    if (saved !== null) {
+      setOnlyHomologated(saved === 'true');
+    }
+
+    const handleSync = () => {
+      const updated = localStorage.getItem('swerank_homologated_only');
+      if (updated !== null) {
+        setOnlyHomologated(updated === 'true');
+      }
+    };
+    
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('swerank_homologation_sync', handleSync);
+    
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('swerank_homologation_sync', handleSync);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -257,30 +280,8 @@ export default function AthleteDetail() {
         </div>
       </div>
 
-      {/* Homologation Toggle Card */}
-      <div className="bg-card border border-border p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="space-y-1">
-          <h3 className="font-bold text-sm flex items-center gap-1.5">
-            <Filter className="h-4 w-4 text-primary" />
-            Resultatfilter
-          </h3>
-          <p className="text-xs text-muted">
-            Välj om du vill visa inofficiella (klubb/nationella) resultat eller endast homologerade (RL/RC).
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer select-none">
-          <input 
-            type="checkbox" 
-            checked={onlyHomologated}
-            onChange={(e) => setOnlyHomologated(e.target.checked)}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
-          <span className="ml-3 text-sm font-semibold text-foreground">
-            Endast homologerade tävlingar
-          </span>
-        </label>
-      </div>
+      {/* Homologation Toggle */}
+      <HomologationToggle />
 
       {/* Personal Bests */}
       <div className="space-y-4">

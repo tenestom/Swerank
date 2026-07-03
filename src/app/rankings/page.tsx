@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, startTransition } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RankingEntry } from '@/lib/types';
+import HomologationToggle from '@/components/HomologationToggle';
 import { 
   Trophy, 
   Search, 
@@ -175,6 +176,8 @@ function RankingsContent() {
           </button>
         ))}
       </div>
+
+      <HomologationToggle showNote={true} />
 
       {/* Filtering Options Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-card border border-border p-4 rounded-xl shadow-sm">

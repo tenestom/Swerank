@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { fetchSwedishAthletes, fetchCalendar } from '@/lib/api';
 import { getCache, setCache } from '@/lib/cache';
 import { Trophy, Calendar, Users, ChevronRight, Activity, Zap } from 'lucide-react';
+import HomologationToggle from '@/components/HomologationToggle';
 
 // Force dynamic so it computes live stats on page load (unless cached)
 export const dynamic = 'force-dynamic';
@@ -90,6 +91,8 @@ export default async function Home() {
           <span>Aktiv Rankingperiod: {startDate} &mdash; {endDate}</span>
         </div>
       </div>
+
+      <HomologationToggle showNote={true} className="max-w-xl mx-auto" />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
