@@ -513,25 +513,37 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
     const table = $(card).next('.card-body').find('table');
     if (!table.length) return;
 
+    let currentDiscipline = '';
+    let currentCompCode = '';
+
     table.find('tbody tr').each((_j, tr) => {
       const tds = $(tr).find('td');
-      if (tds.length < 3) return;
+      if (tds.length === 0) return;
 
-      // Cell 0: Waterski
-      // Cell 1: Competition code link (e.g. 06SWE35)
-      // Cell 2: Event Name (e.g. Open F Slalom)
-      // Cell 3: Rank (e.g. 4)
-      // Cell 4, 5, etc.: Rounds (e.g. 5.00/55/14.25, 3.50/55/14.25)
-      
-      const discipline = $(tds[0]).text().trim();
-      if (discipline.toLowerCase() !== 'waterski') return;
+      let category = '';
+      let rank = '';
+      let roundsStartIdx = 4;
 
-      const compCode = $(tds[1]).text().trim();
-      const category = $(tds[2]).text().trim(); // Open F Slalom
-      const rank = $(tds[3]).text().trim();
+      const firstCellText = $(tds[0]).text().trim().toLowerCase();
+      const firstCellIsDiscipline = firstCellText === 'waterski' || firstCellText === 'wakeboard' || firstCellText === 'barefoot';
+
+      if (firstCellIsDiscipline) {
+        currentDiscipline = $(tds[0]).text().trim();
+        currentCompCode = $(tds[1]).text().trim();
+        category = $(tds[2]).text().trim();
+        rank = $(tds[3]).text().trim();
+        roundsStartIdx = 4;
+      } else {
+        // Rowspanned row: cell 0 is category, cell 1 is rank, cell 2+ are rounds
+        category = $(tds[0]).text().trim();
+        rank = $(tds[1]).text().trim();
+        roundsStartIdx = 2;
+      }
+
+      if (currentDiscipline.toLowerCase() !== 'waterski') return;
 
       const rounds: string[] = [];
-      for (let k = 4; k < tds.length; k++) {
+      for (let k = roundsStartIdx; k < tds.length; k++) {
         const roundScore = $(tds[k]).text().trim();
         if (roundScore && roundScore !== '-') {
           rounds.push(roundScore);
@@ -539,8 +551,8 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
       }
 
       performances.push({
-        discipline,
-        compCode,
+        discipline: currentDiscipline,
+        compCode: currentCompCode,
         compName,
         compUrl,
         dateStr,
