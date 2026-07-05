@@ -704,6 +704,21 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
         qualifiesForOpenHomologated: true
       });
     }
+
+    // Jump Open Cloning (U21)
+    if (eventId === 12 && entry.category === 'U21') {
+      const openKey = `${entry.gender}_Open`;
+      if (!groups[openKey]) {
+        groups[openKey] = [];
+      }
+      groups[openKey].push({
+        ...entry,
+        category: 'Open',
+        isClonedOpen: true,
+        qualifiesForOpenAll: true,
+        qualifiesForOpenHomologated: true
+      });
+    }
   });
 
   // Sort and rank each group
