@@ -296,9 +296,7 @@ function getCategoryByAge(yobStr: string, refYear: number): string {
   const yob = parseInt(yobStr, 10);
   if (isNaN(yob)) return 'Open';
   const age = refYear - yob;
-  if (age <= 10) return 'U10';
-  if (age >= 11 && age <= 12) return 'U12';
-  if (age >= 13 && age <= 14) return 'U14';
+  if (age <= 14) return 'U14';
   if (age >= 15 && age <= 17) return 'U17';
   if (age >= 18 && age <= 21) return 'U21';
   if (age >= 22 && age <= 35) return 'Open';

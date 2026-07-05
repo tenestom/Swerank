@@ -485,8 +485,6 @@ function RankingsContent() {
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="all">Alla Klasser</option>
-            <option value="U10">U10</option>
-            <option value="U12">U12</option>
             <option value="U14">U14</option>
             <option value="U17">U17</option>
             <option value="U21">U21</option>
@@ -529,10 +527,6 @@ function RankingsContent() {
           <div className="space-y-6">
             {(() => {
               const groupOrder = [
-                { category: 'U10', gender: 'F', name: 'U10 Damer' },
-                { category: 'U10', gender: 'M', name: 'U10 Herrar' },
-                { category: 'U12', gender: 'F', name: 'U12 Damer' },
-                { category: 'U12', gender: 'M', name: 'U12 Herrar' },
                 { category: 'U14', gender: 'F', name: 'U14 Damer' },
                 { category: 'U14', gender: 'M', name: 'U14 Herrar' },
                 { category: 'U17', gender: 'F', name: 'U17 Damer' },
