@@ -7,11 +7,22 @@ function getBetterSlalom(s1: string | null, s2: string): string {
   if (!s1) return s2;
   
   function parseSlalom(s: string) {
-    const clean = s.replace(',', '.');
+    const clean = s.replace(',', '.').replace('*', '').trim();
     const parts = clean.split('/');
     const buoys = parseFloat(parts[0]) || 0;
-    const speed = parseFloat(parts[1]) || 0;
-    const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+    let speed = 55;
+    let rope = 18.25;
+    if (parts.length === 3) {
+      speed = parseFloat(parts[1]) || 55;
+      rope = parseFloat(parts[2]) || 18.25;
+    } else if (parts.length === 2) {
+      const val = parseFloat(parts[1]) || 0;
+      if (val <= 25) {
+        rope = val;
+      } else {
+        speed = val;
+      }
+    }
     return { buoys, speed, rope };
   }
 
@@ -89,6 +100,13 @@ describe('Personal Bests Selection Helpers', () => {
     it('should handle decimal commas correctly in slalom', () => {
       expect(getBetterSlalom('3.00/58/18.25', '3,50/58/18.25')).toBe('3,50/58/18.25');
       expect(getBetterSlalom('3,50/58/18.25', '3.00/58/18.25')).toBe('3,50/58/18.25');
+    });
+
+    it('should handle 2-part scores with rope lengths correctly', () => {
+      // Example 1: Kajsa (2.5/13) vs Meja (2/13) -> Kajsa is better
+      expect(getBetterSlalom('2/13', '2,5/13')).toBe('2,5/13');
+      // Example 2: Tengius (1/10.75) vs Edvardsson (3/11.25) -> Tengius is better because of shorter rope
+      expect(getBetterSlalom('3/11.25', '1/10.75')).toBe('1/10.75');
     });
   });
 

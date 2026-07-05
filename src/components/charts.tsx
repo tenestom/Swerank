@@ -86,11 +86,22 @@ export default function PerformanceChart({ data, title, yLabel }: PerformanceCha
 
 // Slalom converter
 export function slalomToNumeric(score: string): number {
-  const clean = score.replace(',', '.');
+  const clean = score.replace(',', '.').replace('*', '').trim();
   const parts = clean.split('/');
   const buoys = parseFloat(parts[0]) || 0;
-  const speed = parseFloat(parts[1]) || 0;
-  const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+  let speed = 55;
+  let rope = 18.25;
+  if (parts.length === 3) {
+    speed = parseFloat(parts[1]) || 55;
+    rope = parseFloat(parts[2]) || 18.25;
+  } else if (parts.length === 2) {
+    const val = parseFloat(parts[1]) || 0;
+    if (val <= 25) {
+      rope = val;
+    } else {
+      speed = val;
+    }
+  }
 
   // Base speed is 40 km/h. Each 3 km/h step is 6 buoys
   const speedBase = 40;

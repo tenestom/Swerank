@@ -830,15 +830,25 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
 function getBetterSlalom(s1: string | null, s2: string): string {
   if (!s1) return s2;
   
-  // Parse Slalom score: e.g. "5.00/58/12.00" or "4.50/55"
-  // Format: Buoys/Speed/Rope
+  // Parse Slalom score: e.g. "5.00/58/12.00", "4.50/55", or "1/10.75"
+  // Format: Buoys/Speed/Rope or Buoys/Rope or Buoys/Speed
   function parseSlalom(s: string) {
-    const clean = s.replace(',', '.');
+    const clean = s.replace(',', '.').replace('*', '').trim();
     const parts = clean.split('/');
     const buoys = parseFloat(parts[0]) || 0;
-    const speed = parseFloat(parts[1]) || 0;
-    // Default rope length is 18.25m if not specified
-    const rope = parts[2] ? parseFloat(parts[2]) : 18.25;
+    let speed = 55;
+    let rope = 18.25;
+    if (parts.length === 3) {
+      speed = parseFloat(parts[1]) || 55;
+      rope = parseFloat(parts[2]) || 18.25;
+    } else if (parts.length === 2) {
+      const val = parseFloat(parts[1]) || 0;
+      if (val <= 25) {
+        rope = val;
+      } else {
+        speed = val;
+      }
+    }
     return { buoys, speed, rope };
   }
 
