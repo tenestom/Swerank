@@ -485,10 +485,20 @@ function RankingsContent() {
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="all">Alla Klasser</option>
+            <option value="U10">U10</option>
+            <option value="U12">U12</option>
             <option value="U14">U14</option>
             <option value="U17">U17</option>
             <option value="U21">U21</option>
             <option value="Open">Open</option>
+            <option value="35+">35+</option>
+            <option value="45+">45+</option>
+            <option value="55+">55+</option>
+            <option value="65+">65+</option>
+            <option value="70+">70+</option>
+            <option value="75+">75+</option>
+            <option value="80+">80+</option>
+            <option value="85+">85+</option>
           </select>
         </div>
       </div>
@@ -519,6 +529,10 @@ function RankingsContent() {
           <div className="space-y-6">
             {(() => {
               const groupOrder = [
+                { category: 'U10', gender: 'F', name: 'U10 Damer' },
+                { category: 'U10', gender: 'M', name: 'U10 Herrar' },
+                { category: 'U12', gender: 'F', name: 'U12 Damer' },
+                { category: 'U12', gender: 'M', name: 'U12 Herrar' },
                 { category: 'U14', gender: 'F', name: 'U14 Damer' },
                 { category: 'U14', gender: 'M', name: 'U14 Herrar' },
                 { category: 'U17', gender: 'F', name: 'U17 Damer' },
@@ -526,7 +540,23 @@ function RankingsContent() {
                 { category: 'U21', gender: 'F', name: 'U21 Damer' },
                 { category: 'U21', gender: 'M', name: 'U21 Herrar' },
                 { category: 'Open', gender: 'F', name: 'Open Damer' },
-                { category: 'Open', gender: 'M', name: 'Open Herrar' }
+                { category: 'Open', gender: 'M', name: 'Open Herrar' },
+                { category: '35+', gender: 'F', name: '35+ Damer' },
+                { category: '35+', gender: 'M', name: '35+ Herrar' },
+                { category: '45+', gender: 'F', name: '45+ Damer' },
+                { category: '45+', gender: 'M', name: '45+ Herrar' },
+                { category: '55+', gender: 'F', name: '55+ Damer' },
+                { category: '55+', gender: 'M', name: '55+ Herrar' },
+                { category: '65+', gender: 'F', name: '65+ Damer' },
+                { category: '65+', gender: 'M', name: '65+ Herrar' },
+                { category: '70+', gender: 'F', name: '70+ Damer' },
+                { category: '70+', gender: 'M', name: '70+ Herrar' },
+                { category: '75+', gender: 'F', name: '75+ Damer' },
+                { category: '75+', gender: 'M', name: '75+ Herrar' },
+                { category: '80+', gender: 'F', name: '80+ Damer' },
+                { category: '80+', gender: 'M', name: '80+ Herrar' },
+                { category: '85+', gender: 'F', name: '85+ Damer' },
+                { category: '85+', gender: 'M', name: '85+ Herrar' }
               ];
 
               const activeGroups = groupOrder.filter(g => {

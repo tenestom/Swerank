@@ -296,10 +296,20 @@ function getCategoryByAge(yobStr: string, refYear: number): string {
   const yob = parseInt(yobStr, 10);
   if (isNaN(yob)) return 'Open';
   const age = refYear - yob;
-  if (age <= 14) return 'U14';
+  if (age <= 10) return 'U10';
+  if (age >= 11 && age <= 12) return 'U12';
+  if (age >= 13 && age <= 14) return 'U14';
   if (age >= 15 && age <= 17) return 'U17';
   if (age >= 18 && age <= 21) return 'U21';
-  return 'Open';
+  if (age >= 22 && age <= 35) return 'Open';
+  if (age >= 36 && age <= 45) return '35+';
+  if (age >= 46 && age <= 55) return '45+';
+  if (age >= 56 && age <= 65) return '55+';
+  if (age >= 66 && age <= 70) return '65+';
+  if (age >= 71 && age <= 75) return '70+';
+  if (age >= 76 && age <= 80) return '75+';
+  if (age >= 81 && age <= 85) return '80+';
+  return '85+';
 }
 
 async function fetchCompetitionAthleteIds(compId: string): Promise<string[]> {

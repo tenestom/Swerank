@@ -116,33 +116,42 @@ function getCategoryByAge(yobStr: string, refYear: number): string {
   const yob = parseInt(yobStr, 10);
   if (isNaN(yob)) return 'Open';
   const age = refYear - yob;
-  if (age <= 14) return 'U14';
+  if (age <= 10) return 'U10';
+  if (age >= 11 && age <= 12) return 'U12';
+  if (age >= 13 && age <= 14) return 'U14';
   if (age >= 15 && age <= 17) return 'U17';
   if (age >= 18 && age <= 21) return 'U21';
-  return 'Open';
+  if (age >= 22 && age <= 35) return 'Open';
+  if (age >= 36 && age <= 45) return '35+';
+  if (age >= 46 && age <= 55) return '45+';
+  if (age >= 56 && age <= 65) return '55+';
+  if (age >= 66 && age <= 70) return '65+';
+  if (age >= 71 && age <= 75) return '70+';
+  if (age >= 76 && age <= 80) return '75+';
+  if (age >= 81 && age <= 85) return '80+';
+  return '85+';
 }
 
 describe('Age Category Selection by Birth Year', () => {
-  it('should map age <= 14 to U14', () => {
+  it('should map junior age classes correctly', () => {
+    expect(getCategoryByAge('2018', 2026)).toBe('U10'); // Age 8
+    expect(getCategoryByAge('2015', 2026)).toBe('U12'); // Age 11
     expect(getCategoryByAge('2012', 2026)).toBe('U14'); // Age 14
-    expect(getCategoryByAge('2015', 2026)).toBe('U14'); // Age 11 (U12)
-    expect(getCategoryByAge('2018', 2026)).toBe('U14'); // Age 8 (U10)
-  });
-
-  it('should map age 15-17 to U17', () => {
     expect(getCategoryByAge('2011', 2026)).toBe('U17'); // Age 15
-    expect(getCategoryByAge('2009', 2026)).toBe('U17'); // Age 17
-  });
-
-  it('should map age 18-21 to U21', () => {
-    expect(getCategoryByAge('2008', 2026)).toBe('U21'); // Age 18
     expect(getCategoryByAge('2005', 2026)).toBe('U21'); // Age 21
   });
 
-  it('should map age >= 22 to Open', () => {
+  it('should map Open and Senior age classes correctly', () => {
     expect(getCategoryByAge('2004', 2026)).toBe('Open'); // Age 22
-    expect(getCategoryByAge('1990', 2026)).toBe('Open'); // Age 36 (35+)
-    expect(getCategoryByAge('1975', 2026)).toBe('Open'); // Age 51 (45+)
+    expect(getCategoryByAge('1991', 2026)).toBe('Open'); // Age 35
+    expect(getCategoryByAge('1990', 2026)).toBe('35+');  // Age 36
+    expect(getCategoryByAge('1980', 2026)).toBe('45+');  // Age 46
+    expect(getCategoryByAge('1970', 2026)).toBe('55+');  // Age 56
+    expect(getCategoryByAge('1960', 2026)).toBe('65+');  // Age 66
+    expect(getCategoryByAge('1955', 2026)).toBe('70+');  // Age 71
+    expect(getCategoryByAge('1950', 2026)).toBe('75+');  // Age 76
+    expect(getCategoryByAge('1945', 2026)).toBe('80+');  // Age 81
+    expect(getCategoryByAge('1940', 2026)).toBe('85+');  // Age 86
   });
 
   it('should remain correct when moving to next year (dynamic check)', () => {
@@ -151,6 +160,7 @@ describe('Age Category Selection by Birth Year', () => {
     expect(getCategoryByAge('2012', 2027)).toBe('U17'); // Age 15 (promoted from U14 to U17)
     expect(getCategoryByAge('2009', 2027)).toBe('U21'); // Age 18 (promoted from U17 to U21)
     expect(getCategoryByAge('2005', 2027)).toBe('Open'); // Age 22 (promoted from U21 to Open)
+    expect(getCategoryByAge('1991', 2027)).toBe('35+');  // Age 36 (promoted from Open to 35+)
   });
 });
 
