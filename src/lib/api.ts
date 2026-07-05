@@ -410,10 +410,14 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
 
       // Look up competition names in calendar lookup
       const comp1 = calendarLookup[comp1Code];
-      const comp1Name = comp1 ? comp1.name : comp1Code;
+      const comp1Name = comp1 
+        ? `${comp1.name} (${comp1.dateStr})` 
+        : comp1Code;
 
       const comp2 = calendarLookup[comp2Code];
-      const comp2Name = comp2 ? comp2.name : comp2Code;
+      const comp2Name = comp2 
+        ? `${comp2.name} (${comp2.dateStr})` 
+        : comp2Code;
 
       // Determine category dynamically by age chart
       const category = getCategoryByAge(yob, year);
@@ -562,7 +566,11 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
             candidates.push({
               score,
               code: perf.compCode,
-              name: perf.compName || comp?.name || perf.compCode,
+              name: perf.compName 
+                ? `${perf.compName}${perf.dateStr ? ` (${perf.dateStr})` : ''}` 
+                : comp 
+                ? `${comp.name} (${comp.dateStr})` 
+                : perf.compCode,
               homologated
             });
           });
