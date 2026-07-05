@@ -677,6 +677,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
     }
     groups[key].push(entry);
 
+    // Slalom Open Qualification Cloning
     if (eventId === 10 && entry.qualifiesForOpenAll && entry.category !== 'Open') {
       const openKey = `${entry.gender}_Open`;
       if (!groups[openKey]) {
@@ -686,6 +687,21 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
         ...entry,
         category: 'Open',
         isClonedOpen: true
+      });
+    }
+
+    // Tricks Open Cloning (U17 and upwards)
+    if (eventId === 11 && entry.category !== 'U14' && entry.category !== 'Open') {
+      const openKey = `${entry.gender}_Open`;
+      if (!groups[openKey]) {
+        groups[openKey] = [];
+      }
+      groups[openKey].push({
+        ...entry,
+        category: 'Open',
+        isClonedOpen: true,
+        qualifiesForOpenAll: true,
+        qualifiesForOpenHomologated: true
       });
     }
   });
