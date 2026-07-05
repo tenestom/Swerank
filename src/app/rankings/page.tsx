@@ -313,6 +313,11 @@ function RankingsContent() {
     // Group by gender and category
     const groups: Record<string, RankingEntry[]> = {};
     rankings.forEach(entry => {
+      if (entry.isClonedOpen) {
+        if (onlyHomologated && !entry.qualifiesForOpenHomologated) return;
+        if (!onlyHomologated && !entry.qualifiesForOpenAll) return;
+      }
+
       const key = `${entry.gender}_${entry.category}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push({ ...entry });

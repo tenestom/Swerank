@@ -47,6 +47,9 @@ export interface RankingEntry {
   club: string | null;
   athleteCode: string | null;
   bestScore: string;
+  qualifiesForOpenHomologated?: boolean;
+  qualifiesForOpenAll?: boolean;
+  isClonedOpen?: boolean;
 }
 
 export interface PerformanceRound {

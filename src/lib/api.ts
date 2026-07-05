@@ -555,6 +555,9 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
           homologated: boolean;
         }
 
+        let qualifiesForOpenHomologated = false;
+        let qualifiesForOpenAll = false;
+
         const candidates: ScoreCandidate[] = [];
         eventPerfs.forEach(perf => {
           const comp = calendarLookup[perf.compCode.toUpperCase()];
@@ -573,8 +576,37 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
                 : perf.compCode,
               homologated
             });
+
+            if (eventId === 10) {
+              const cleanScore = score.replace(',', '.').replace('*', '').trim();
+              const parts = cleanScore.split('/');
+              let speed = 55;
+              if (parts.length === 3) {
+                speed = parseFloat(parts[1]) || 55;
+              } else if (parts.length === 2) {
+                const val = parseFloat(parts[1]) || 0;
+                if (val > 25) {
+                  speed = val;
+                }
+              }
+              if (entry.gender === 'F' && speed === 55) {
+                qualifiesForOpenAll = true;
+                if (homologated) {
+                  qualifiesForOpenHomologated = true;
+                }
+              }
+              if (entry.gender === 'M' && speed === 58) {
+                qualifiesForOpenAll = true;
+                if (homologated) {
+                  qualifiesForOpenHomologated = true;
+                }
+              }
+            }
           });
         });
+
+        entry.qualifiesForOpenHomologated = qualifiesForOpenHomologated;
+        entry.qualifiesForOpenAll = qualifiesForOpenAll;
 
         const sortCandidates = (list: ScoreCandidate[]) => {
           return list.sort((a, b) => {
@@ -644,6 +676,18 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       groups[key] = [];
     }
     groups[key].push(entry);
+
+    if (eventId === 10 && entry.qualifiesForOpenAll && entry.category !== 'Open') {
+      const openKey = `${entry.gender}_Open`;
+      if (!groups[openKey]) {
+        groups[openKey] = [];
+      }
+      groups[openKey].push({
+        ...entry,
+        category: 'Open',
+        isClonedOpen: true
+      });
+    }
   });
 
   // Sort and rank each group
