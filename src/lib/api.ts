@@ -705,8 +705,8 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       });
     }
 
-    // Jump Open Cloning (U21)
-    if (eventId === 12 && entry.category === 'U21') {
+    // Jump Open Cloning (U21 and U17)
+    if (eventId === 12 && (entry.category === 'U21' || entry.category === 'U17')) {
       const openKey = `${entry.gender}_Open`;
       if (!groups[openKey]) {
         groups[openKey] = [];
