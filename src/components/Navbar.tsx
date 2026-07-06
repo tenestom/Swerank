@@ -52,9 +52,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 text-primary dark:text-primary font-bold text-xl uppercase tracking-wider">
-              <Waves className="h-6 w-6 text-primary dark:text-primary animate-pulse" />
-              <span>Swerank</span>
+            <Link href="/" className="flex items-center text-primary dark:text-primary font-extrabold text-base sm:text-lg tracking-tight">
+              <span>Svensk inofficiell rankinglista</span>
             </Link>
           </div>
 
