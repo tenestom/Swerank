@@ -668,6 +668,14 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
     }));
   }
 
+  // Remove any entries that have no results in this discipline in the last 12 months
+  Object.keys(uniqueEntries).forEach(athleteId => {
+    const entry = uniqueEntries[athleteId];
+    if (entry.allScore1 === '-' && entry.score1 === '-') {
+      delete uniqueEntries[athleteId];
+    }
+  });
+
   // Group by gender and category
   const groups: Record<string, RankingEntry[]> = {};
   Object.values(uniqueEntries).forEach(entry => {
