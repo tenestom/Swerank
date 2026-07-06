@@ -50,13 +50,6 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-border transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center text-primary dark:text-primary font-extrabold text-base sm:text-lg tracking-tight">
-              <span>Svensk inofficiell rankinglista</span>
-            </Link>
-          </div>
-
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => {

@@ -79,11 +79,8 @@ export default async function Home() {
       {/* Hero Section */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-blue-400 bg-clip-text text-transparent">
-          Svensk Vattenskidranking
+          Svensk inofficiell rankinglista
         </h1>
-        <p className="text-lg text-muted font-medium">
-          Inofficiell svensk ranking
-        </p>
         
         {/* Rolling Banner */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted-bg text-sm font-semibold border border-border">

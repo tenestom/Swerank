@@ -432,7 +432,7 @@ function RankingsContent() {
         <div>
           <h1 className="text-3xl font-extrabold flex items-center gap-2">
             <Trophy className="h-7 w-7 text-secondary" />
-            Svensk Rankinglista
+            Svensk inofficiell rankinglista
           </h1>
           <p className="text-sm text-muted">
             Ställning baserad på åkarnas två bästa resultat under de senaste 12 månaderna.
