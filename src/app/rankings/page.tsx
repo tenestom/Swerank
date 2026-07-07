@@ -313,6 +313,11 @@ function RankingsContent() {
     // Group by gender and category
     const groups: Record<string, RankingEntry[]> = {};
     rankings.forEach(entry => {
+      // If only homologated is active, skip skiers who don't have any homologated results
+      if (onlyHomologated && entry.score1 === '-') {
+        return;
+      }
+
       if (entry.isClonedOpen) {
         if (onlyHomologated && !entry.qualifiesForOpenHomologated) return;
         if (!onlyHomologated && !entry.qualifiesForOpenAll) return;
