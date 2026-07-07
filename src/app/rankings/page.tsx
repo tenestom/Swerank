@@ -13,7 +13,8 @@ import {
   ArrowDown, 
   RefreshCw,
   User,
-  Users
+  Users,
+  FileDown
 } from 'lucide-react';
 
 function getBetterSlalom(s1: string | null, s2: string): string {
@@ -79,7 +80,7 @@ function CategoryGroupSection({
   const top3 = entries.slice(0, 3);
   const remaining = entries.slice(3);
 
-  const renderRow = (entry: RankingEntry, idx: number) => {
+  const renderRow = (entry: RankingEntry, idx: number, isCollapsed = false) => {
     const activeScore1 = onlyHomologated ? entry.score1 : entry.allScore1;
     const activeScore2 = onlyHomologated ? entry.score2 : entry.allScore2;
     const activeComp1Code = onlyHomologated ? entry.comp1Code : entry.allComp1Code;
@@ -92,7 +93,7 @@ function CategoryGroupSection({
     return (
       <tr 
         key={entry.athleteId + idx} 
-        className="hover:bg-muted-bg/50 transition-colors duration-150 border-b border-border/60"
+        className={`hover:bg-muted-bg/50 transition-colors duration-150 border-b border-border/60 ${isCollapsed ? 'hidden print:table-row' : ''}`}
       >
         <td className="p-4 font-bold text-sm w-16">
           {entry.rank}
@@ -188,13 +189,13 @@ function CategoryGroupSection({
           <tbody className="divide-y divide-border/40">
             {top3.map((entry, idx) => renderRow(entry, idx))}
             
-            {expanded && remaining.map((entry, idx) => renderRow(entry, idx + 3))}
+            {remaining.map((entry, idx) => renderRow(entry, idx + 3, !expanded))}
           </tbody>
         </table>
       </div>
 
       {remaining.length > 0 && (
-        <div className="p-3 bg-muted-bg/20 border-t border-border/50 text-center">
+        <div className="p-3 bg-muted-bg/20 border-t border-border/50 text-center print:hidden">
           <button
             onClick={() => setExpanded(!expanded)}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-card border border-border hover:bg-muted-bg text-primary transition-all shadow-sm hover:shadow active:scale-95 duration-150"
@@ -443,18 +444,27 @@ function RankingsContent() {
             Ställning baserad på åkarnas två bästa resultat under de senaste 12 månaderna.
           </p>
         </div>
-        <button
-          onClick={() => fetchRankings(discipline, true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-card border border-border hover:bg-muted-bg transition-colors"
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Uppdatera
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-sm cursor-pointer"
+          >
+            <FileDown className="h-4 w-4" />
+            Spara som PDF
+          </button>
+          <button
+            onClick={() => fetchRankings(discipline, true)}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-card border border-border hover:bg-muted-bg transition-colors cursor-pointer"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Uppdatera
+          </button>
+        </div>
       </div>
 
       {/* Discipline Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border print:hidden">
         {['slalom', 'tricks', 'jump'].map((tab) => (
           <button
             key={tab}
@@ -470,10 +480,12 @@ function RankingsContent() {
         ))}
       </div>
 
-      <HomologationToggle showNote={true} />
+      <div className="print:hidden">
+        <HomologationToggle showNote={true} />
+      </div>
 
       {/* Filtering Options Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-card border border-border p-4 rounded-xl shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-card border border-border p-4 rounded-xl shadow-sm print:hidden">
         {/* Search */}
         <div className="relative col-span-1 sm:col-span-2">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted" />

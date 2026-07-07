@@ -96,3 +96,57 @@ body {
   z-index: 10;
   background-color: var(--muted-background);
 }
+
+/* Print styles for clean PDF downloads */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  /* Force light theme colors for printing */
+  :root, .dark, [data-theme='dark'] {
+    --background: #ffffff !important;
+    --foreground: #000000 !important;
+    --card: #ffffff !important;
+    --border: #cccccc !important;
+    --primary: #005b99 !important;
+    --muted: #555555 !important;
+    --muted-background: #eeeeee !important;
+  }
+
+  /* Hide unneeded print elements */
+  nav,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset layout for full-page PDF printing */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .bg-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+  }
+
+  /* Avoid row truncation and bad breaks */
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  /* Table styling enhancements for print readability */
+  table {
+    width: 100% !important;
+  }
+
+  th, td {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #eee !important;
+  }
+}
