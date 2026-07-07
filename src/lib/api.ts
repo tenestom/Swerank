@@ -398,9 +398,11 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
       const catVal = $(tds[4]).text().trim();
       const yob = $(tds[5]).text().trim();
       const comp1Code = $(tds[6]).text().trim().toUpperCase();
-      const score1 = $(tds[7]).text().trim();
+      const rawScore1 = $(tds[7]).text().trim();
+      const score1 = rawScore1.toUpperCase() === 'DNS' ? '-' : rawScore1;
       const comp2Code = $(tds[8]).text().trim().toUpperCase();
-      const score2 = $(tds[9]).text().trim();
+      const rawScore2 = $(tds[9]).text().trim();
+      const score2 = rawScore2.toUpperCase() === 'DNS' ? '-' : rawScore2;
 
       // Look up club and athlete license code from athletes roster
       const athleteData = athletesLookup[athleteId];
@@ -860,7 +862,7 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
       const rounds: string[] = [];
       for (let k = roundsStartIdx; k < tds.length; k++) {
         const roundScore = $(tds[k]).text().trim();
-        if (roundScore && roundScore !== '-') {
+        if (roundScore && roundScore !== '-' && roundScore.toUpperCase() !== 'DNS') {
           rounds.push(roundScore);
         }
       }
