@@ -609,6 +609,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
 
         entry.qualifiesForOpenHomologated = qualifiesForOpenHomologated;
         entry.qualifiesForOpenAll = qualifiesForOpenAll;
+        entry.eventPerfs = eventPerfs;
 
         const sortCandidates = (list: ScoreCandidate[]) => {
           return list.sort((a, b) => {
@@ -736,14 +737,119 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
   Object.keys(groups).forEach(key => {
     const groupEntries = groups[key];
     
-    groupEntries.sort((a, b) => {
+    // For slalom, recalculate scores based on matching category max speed
+    if (eventId === 10) {
+      groupEntries.forEach(entry => {
+        if (!entry.eventPerfs) return;
+        const targetMaxSpeed = getMaxSpeed(entry.gender, entry.category);
+        const eligiblePerfs = entry.eventPerfs.filter(perf => {
+          const competedMaxSpeed = getCompetedMaxSpeed(entry.gender, perf.category);
+          return competedMaxSpeed === targetMaxSpeed;
+        });
+
+        interface ScoreCandidate {
+          score: string;
+          code: string;
+          name: string;
+          homologated: boolean;
+        }
+
+        const candidates: ScoreCandidate[] = [];
+        eligiblePerfs.forEach(perf => {
+          const comp = calendarLookup[perf.compCode.toUpperCase()];
+          const homologated = comp 
+            ? isHomologatedCode(comp.homologation) 
+            : !perf.compCode.toUpperCase().includes('SWE');
+
+          perf.rounds.forEach(score => {
+            candidates.push({
+              score,
+              code: perf.compCode,
+              name: perf.compName 
+                ? `${perf.compName}${perf.dateStr ? ` (${perf.dateStr})` : ''}` 
+                : comp 
+                ? `${comp.name} (${comp.dateStr})` 
+                : perf.compCode,
+              homologated
+            });
+          });
+        });
+
+        const sortCandidates = (list: ScoreCandidate[]) => {
+          return list.sort((a, b) => {
+            const better = getBetterSlalom(a.score, b.score);
+            if (better === a.score && better !== b.score) return -1;
+            if (better === b.score && better !== a.score) return 1;
+            return 0;
+          });
+        };
+
+        const sortedAll = sortCandidates([...candidates]);
+        const sortedHomologated = sortCandidates(candidates.filter(c => c.homologated));
+
+        if (sortedAll.length > 0) {
+          entry.allScore1 = sortedAll[0].score;
+          entry.allComp1Code = sortedAll[0].code;
+          entry.allComp1Name = sortedAll[0].name;
+          entry.bestScore = sortedAll[0].score;
+          
+          if (sortedAll.length > 1) {
+            entry.allScore2 = sortedAll[1].score;
+            entry.allComp2Code = sortedAll[1].code;
+            entry.allComp2Name = sortedAll[1].name;
+          } else {
+            entry.allScore2 = '-';
+            entry.allComp2Code = '';
+            entry.allComp2Name = '';
+          }
+        } else {
+          entry.allScore1 = '-';
+          entry.allComp1Code = '';
+          entry.allComp1Name = '';
+          entry.bestScore = '-';
+          entry.allScore2 = '-';
+          entry.allComp2Code = '';
+          entry.allComp2Name = '';
+        }
+
+        if (sortedHomologated.length > 0) {
+          entry.score1 = sortedHomologated[0].score;
+          entry.comp1Code = sortedHomologated[0].code;
+          entry.comp1Name = sortedHomologated[0].name;
+          
+          if (sortedHomologated.length > 1) {
+            entry.score2 = sortedHomologated[1].score;
+            entry.comp2Code = sortedHomologated[1].code;
+            entry.comp2Name = sortedHomologated[1].name;
+          } else {
+            entry.score2 = '-';
+            entry.comp2Code = '';
+            entry.comp2Name = '';
+          }
+        } else {
+          entry.score1 = '-';
+          entry.comp1Code = '';
+          entry.comp1Name = '';
+          entry.score2 = '-';
+          entry.comp2Code = '';
+          entry.comp2Name = '';
+        }
+      });
+    }
+
+    // Filter out entries that have no scores in the category after speed filtering
+    const activeEntries = eventId === 10
+      ? groupEntries.filter(entry => entry.allScore1 !== '-' || entry.score1 !== '-')
+      : groupEntries;
+
+    activeEntries.sort((a, b) => {
       if (eventId === 10) {
-        const better = getBetterSlalom(a.bestScore, b.bestScore);
+        const maxSpeed = getMaxSpeed(a.gender, a.category);
+        const better = getBetterSlalom(a.bestScore, b.bestScore, maxSpeed);
         if (better === a.bestScore && better !== b.bestScore) return -1;
         if (better === b.bestScore && better !== a.bestScore) return 1;
-        
-        // If equal, compare score2
-        const better2 = getBetterSlalom(a.score2, b.score2);
+        // Let's write the correct code carefully
+        const better2 = getBetterSlalom(a.score2, b.score2, maxSpeed);
         if (better2 === a.score2 && better2 !== b.score2) return -1;
         if (better2 === b.score2 && better2 !== a.score2) return 1;
         return 0;
@@ -767,7 +873,7 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
     });
 
     // Assign sequential ranks within the group
-    groupEntries.forEach((entry, idx) => {
+    activeEntries.forEach((entry, idx) => {
       entry.rank = idx + 1;
       finalEntries.push(entry);
     });
@@ -920,7 +1026,45 @@ export async function getAthleteProfile(id: string): Promise<AthleteProfile> {
 
 // Heuristics for comparing scores
 
-function getBetterSlalom(s1: string | null, s2: string): string {
+function getMaxSpeed(gender: string, category: string): number {
+  const g = gender.toUpperCase();
+  const cat = category.toUpperCase();
+
+  if (g === 'M') {
+    if (cat === 'U14') return 55;
+    if (cat === 'U17' || cat === 'U21' || cat === 'OPEN') return 58;
+    if (cat === '35+' || cat === '45+' || cat === '55+') return 55;
+    if (cat === '65+' || cat === '70+') return 52;
+    if (cat === '75+' || cat === '80+') return 49;
+    return 46; // 85+
+  } else { // 'F' / Women
+    if (cat === 'U14') return 52;
+    if (cat === 'U17' || cat === 'U21' || cat === 'OPEN' || cat === '35+') return 55;
+    if (cat === '45+' || cat === '55+') return 52;
+    if (cat === '65+' || cat === '70+') return 49;
+    return 46; // 75+, 80+, 85+
+  }
+}
+
+function getCompetedMaxSpeed(gender: string, perfCategory: string): number {
+  const cat = perfCategory.toUpperCase();
+  let div = 'Open';
+  if (cat.includes('U14') || cat.includes('UNDER 14')) div = 'U14';
+  else if (cat.includes('U17') || cat.includes('UNDER 17')) div = 'U17';
+  else if (cat.includes('U21') || cat.includes('UNDER 21')) div = 'U21';
+  else if (cat.includes('35') || cat.includes('OVER 35') || cat.includes('+35') || cat.includes('35+')) div = '35+';
+  else if (cat.includes('45') || cat.includes('OVER 45') || cat.includes('+45') || cat.includes('45+')) div = '45+';
+  else if (cat.includes('55') || cat.includes('OVER 55') || cat.includes('+55') || cat.includes('55+')) div = '55+';
+  else if (cat.includes('65') || cat.includes('OVER 65') || cat.includes('+65') || cat.includes('65+')) div = '65+';
+  else if (cat.includes('70') || cat.includes('OVER 70') || cat.includes('+70') || cat.includes('70+')) div = '70+';
+  else if (cat.includes('75') || cat.includes('OVER 75') || cat.includes('+75') || cat.includes('75+')) div = '75+';
+  else if (cat.includes('80') || cat.includes('OVER 80') || cat.includes('+80') || cat.includes('80+')) div = '80+';
+  else if (cat.includes('85') || cat.includes('OVER 85') || cat.includes('+85') || cat.includes('85+')) div = '85+';
+  
+  return getMaxSpeed(gender, div);
+}
+
+function getBetterSlalom(s1: string | null, s2: string, maxSpeed?: number): string {
   if (!s1) return s2;
   
   // Parse Slalom score: e.g. "5.00/58/12.00", "4.50/55", or "1/10.75"
@@ -941,6 +1085,10 @@ function getBetterSlalom(s1: string | null, s2: string): string {
       } else {
         speed = val;
       }
+    }
+    // Cap the speed to the category's maximum speed if specified
+    if (maxSpeed && speed > maxSpeed) {
+      speed = maxSpeed;
     }
     return { buoys, speed, rope };
   }

@@ -17,7 +17,27 @@ import {
   FileDown
 } from 'lucide-react';
 
-function getBetterSlalom(s1: string | null, s2: string): string {
+function getMaxSpeed(gender: string, category: string): number {
+  const g = gender.toUpperCase();
+  const cat = category.toUpperCase();
+
+  if (g === 'M') {
+    if (cat === 'U14') return 55;
+    if (cat === 'U17' || cat === 'U21' || cat === 'OPEN') return 58;
+    if (cat === '35+' || cat === '45+' || cat === '55+') return 55;
+    if (cat === '65+' || cat === '70+') return 52;
+    if (cat === '75+' || cat === '80+') return 49;
+    return 46; // 85+
+  } else { // 'F' / Women
+    if (cat === 'U14') return 52;
+    if (cat === 'U17' || cat === 'U21' || cat === 'OPEN' || cat === '35+') return 55;
+    if (cat === '45+' || cat === '55+') return 52;
+    if (cat === '65+' || cat === '70+') return 49;
+    return 46; // 75+, 80+, 85+
+  }
+}
+
+function getBetterSlalom(s1: string | null, s2: string, maxSpeed?: number): string {
   if (!s1) return s2;
   
   function parseSlalom(s: string) {
@@ -36,6 +56,10 @@ function getBetterSlalom(s1: string | null, s2: string): string {
       } else {
         speed = val;
       }
+    }
+    // Cap the speed to the category's maximum speed if specified
+    if (maxSpeed && speed > maxSpeed) {
+      speed = maxSpeed;
     }
     return { buoys, speed, rope };
   }
@@ -341,11 +365,12 @@ function RankingsContent() {
         const scoreB2 = onlyHomologated ? b.score2 : b.allScore2;
 
         if (discipline === 'slalom') {
-          const better = getBetterSlalom(scoreA1, scoreB1);
+          const maxSpeed = getMaxSpeed(a.gender, a.category);
+          const better = getBetterSlalom(scoreA1, scoreB1, maxSpeed);
           if (better === scoreA1 && better !== scoreB1) return -1;
           if (better === scoreB1 && better !== scoreA1) return 1;
           
-          const better2 = getBetterSlalom(scoreA2, scoreB2);
+          const better2 = getBetterSlalom(scoreA2, scoreB2, maxSpeed);
           if (better2 === scoreA2 && better2 !== scoreB2) return -1;
           if (better2 === scoreB2 && better2 !== scoreA2) return 1;
           return 0;

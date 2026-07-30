@@ -3,7 +3,7 @@ import { slalomToNumeric } from '../src/components/charts';
 
 // Mock helpers from api.ts since we can import them or write equivalent logic
 // Let's duplicate the PB selection helpers here to test their logic
-function getBetterSlalom(s1: string | null, s2: string): string {
+function getBetterSlalom(s1: string | null, s2: string, maxSpeed?: number): string {
   if (!s1) return s2;
   
   function parseSlalom(s: string) {
@@ -22,6 +22,10 @@ function getBetterSlalom(s1: string | null, s2: string): string {
       } else {
         speed = val;
       }
+    }
+    // Cap speed if maxSpeed is specified
+    if (maxSpeed && speed > maxSpeed) {
+      speed = maxSpeed;
     }
     return { buoys, speed, rope };
   }
@@ -107,6 +111,15 @@ describe('Personal Bests Selection Helpers', () => {
       expect(getBetterSlalom('2/13', '2,5/13')).toBe('2,5/13');
       // Example 2: Tengius (1/10.75) vs Edvardsson (3/11.25) -> Tengius is better because of shorter rope
       expect(getBetterSlalom('3/11.25', '1/10.75')).toBe('1/10.75');
+    });
+
+    it('should handle speed capping at maxSpeed during comparison', () => {
+      // Edvardsson has 3.00/58/11.25. Tengius has 1.00/55/10.75.
+      // Uncapped (Open Men, maxSpeed = 58): Edvardsson wins because 58 > 55
+      expect(getBetterSlalom('3.00/58/11.25', '1.00/55/10.75', 58)).toBe('3.00/58/11.25');
+      
+      // Capped at 55 (Men 45+, maxSpeed = 55): Tengius wins because 3/55/11.25 vs 1/55/10.75 -> 10.75m is shorter
+      expect(getBetterSlalom('3.00/58/11.25', '1.00/55/10.75', 55)).toBe('1.00/55/10.75');
     });
   });
 

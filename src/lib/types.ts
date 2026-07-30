@@ -50,6 +50,7 @@ export interface RankingEntry {
   qualifiesForOpenHomologated?: boolean;
   qualifiesForOpenAll?: boolean;
   isClonedOpen?: boolean;
+  eventPerfs?: AthletePerformance[];
 }
 
 export interface PerformanceRound {
