@@ -283,7 +283,7 @@ async function fetchSwedishRankingsHtml(eventId: number, seasonId: number, month
 function isHomologatedCode(abbr: string | null | undefined): boolean {
   if (!abbr) return false;
   const a = abbr.toUpperCase();
-  return a === 'RC' || a === 'RL' || a === 'R' || a === 'L' || a === 'E';
+  return a === 'RC' || a === 'RL' || a === 'R' || a === 'L' || a === 'E' || a === 'NTH' || a === 'NT' || a === 'N';
 }
 
 function parseDateStr(str: string): Date | null {
