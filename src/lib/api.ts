@@ -147,18 +147,29 @@ export async function fetchCalendar(startDate: string, endDate: string, country:
   params.append('search[value]', '');
   params.append('search[regex]', 'false');
 
-  const res = await fetch(`${EMS_BASE}/Calendar/LoadCalendar`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'X-Requested-With': 'XMLHttpRequest',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    body: params.toString()
-  });
+  let res: Response | null = null;
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      res = await fetch(`${EMS_BASE}/Calendar/LoadCalendar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        body: params.toString()
+      });
+      if (res.ok) break;
+    } catch (e) {
+      // Retry on network error
+    }
+    attempts++;
+    if (attempts < 3) await new Promise(r => setTimeout(r, 500));
+  }
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch calendar: HTTP ${res.status}`);
+  if (!res || !res.ok) {
+    throw new Error(`Failed to fetch calendar: HTTP ${res ? res.status : 'network error'}`);
   }
 
   const payload = await res.json();
@@ -345,8 +356,9 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
   const seasonId = year - 2016;
 
   // 1. Fetch Swedish athletes & rolling calendar concurrently
+  const lastDay = new Date(year, month, 0).getDate();
   const startDate = `01/${month.toString().padStart(2, '0')}/${year - 1}`;
-  const endDate = `31/${month.toString().padStart(2, '0')}/${year}`;
+  const endDate = `${lastDay.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
 
   const [athletesLookup, calendarLookup, rawHtml] = await Promise.all([
     fetchSwedishAthletes().catch(err => {
@@ -478,13 +490,18 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
   });
 
   // Fetch competitor athlete IDs from all Swedish competitions in the calendar
-  const swedishComps = Object.values(calendarLookup).filter(c => c.countryAbbr === 'SWE');
+  const swedishComps = Object.values(calendarLookup).filter(c => c.countryAbbr === 'SWE' || c.code.toUpperCase().includes('SWE'));
   const compAthleteIdsLists = await Promise.all(
     swedishComps.map(comp => fetchCompetitionAthleteIds(comp.id).catch(() => []))
   );
 
   const candidateIds = new Set<string>();
   compAthleteIdsLists.flat().forEach(id => candidateIds.add(id));
+
+  // If candidate discovery returned empty (e.g. calendar API failure), fallback to all Swedish roster IDs
+  if (candidateIds.size === 0) {
+    Object.keys(athletesLookup).forEach(id => candidateIds.add(id));
+  }
 
   // Add any missing Swedish competitors from these competitions to uniqueEntries with default values
   candidateIds.forEach(athleteId => {
