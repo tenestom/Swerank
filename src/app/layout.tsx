@@ -10,6 +10,11 @@ export const viewport = {
 export const metadata: Metadata = {
   title: 'Svensk inofficiell rankinglista - Live Vattenskidranking',
   description: 'Live uppdaterad svensk vattenskidranking baserad på IWWF EMS tävlingsresultat från de senaste 12 månaderna.',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="wave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#7dd3fc" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Circular background badge -->
+  <rect width="64" height="64" rx="16" fill="url(#bg)" />
+
+  <!-- Dynamic spray wave -->
+  <path d="M 8 46 Q 20 38 32 44 T 56 36 L 56 56 L 8 56 Z" fill="url(#wave)" opacity="0.4" />
+  <path d="M 8 50 Q 24 42 40 48 T 56 42 L 56 56 L 8 56 Z" fill="url(#wave)" opacity="0.8" />
+
+  <!-- Waterski Slalom Ski (Angled) -->
+  <path d="M 14 46 L 46 14 Q 50 10 52 14 Q 54 18 50 22 L 18 54 Z" fill="url(#gold)" />
+  
+  <!-- Binding / Foot Strap -->
+  <rect x="28" y="28" width="8" height="10" rx="3" fill="#ffffff" transform="rotate(-45 32 33)" />
+
+  <!-- Trophy Star Accent -->
+  <path d="M 48 12 L 49.5 16.5 L 54 16.5 L 50.5 19 L 52 23.5 L 48 21 L 44 23.5 L 45.5 19 L 42 16.5 L 46.5 16.5 Z" fill="#fef08a" />
+</svg>
