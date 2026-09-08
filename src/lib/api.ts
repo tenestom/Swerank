@@ -489,19 +489,8 @@ export async function getSwedishRankings(eventId: number, year: number, month: n
     }
   });
 
-  // Fetch competitor athlete IDs from all Swedish competitions in the calendar
-  const swedishComps = Object.values(calendarLookup).filter(c => c.countryAbbr === 'SWE' || c.code.toUpperCase().includes('SWE'));
-  const compAthleteIdsLists = await Promise.all(
-    swedishComps.map(comp => fetchCompetitionAthleteIds(comp.id).catch(() => []))
-  );
-
-  const candidateIds = new Set<string>();
-  compAthleteIdsLists.flat().forEach(id => candidateIds.add(id));
-
-  // If candidate discovery returned empty (e.g. calendar API failure), fallback to all Swedish roster IDs
-  if (candidateIds.size === 0) {
-    Object.keys(athletesLookup).forEach(id => candidateIds.add(id));
-  }
+  // Include all Swedish roster athletes as candidates so that performances across ALL competitions worldwide are checked
+  const candidateIds = new Set<string>(Object.keys(athletesLookup));
 
   // Add any missing Swedish competitors from these competitions to uniqueEntries with default values
   candidateIds.forEach(athleteId => {
